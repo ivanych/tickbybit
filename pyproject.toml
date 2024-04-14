@@ -1,0 +1,9 @@
+[project]
+name = "tickbybit"
+version = "0.1.0"
+
+dependencies = [
+    "httpx",
+    "jsonpath-ng",
+    "aiofiles",
+]
