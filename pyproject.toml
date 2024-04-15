@@ -6,4 +6,5 @@ dependencies = [
     "httpx",
     "jsonpath-ng",
     "aiofiles",
+    "aiogram",
 ]
