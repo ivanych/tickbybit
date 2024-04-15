@@ -1,0 +1,11 @@
+version: "2.1"
+services:
+  tickbybit:
+    build:
+      context: .
+    image: tickbybit
+    container_name: tickbybit
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - BOT_DIRPATH=${BOT_DIRPATH}
+    restart: unless-stopped
