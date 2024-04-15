@@ -38,6 +38,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     python -m pip install .
 
+RUN mkdir -p .settings \
+    && chown appuser:appuser .settings
+
 RUN mkdir -p .tickers \
     && chown appuser:appuser .tickers
 
