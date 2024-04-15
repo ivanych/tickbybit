@@ -1,27 +1,15 @@
-import json
+import yaml
+import logging
+
+logger = logging.getLogger("tickbybit.settings")
 
 
-def settings() -> dict:
-    result = {
-        'period': 5 * 60 * 1000,  # миллисекунды (5 минут)
-        'tickers': {
-            'BTCUSDT': {
-                'markPrice': {
-                    'alert_pcnt': 0.08,  # проценты
-                },
-                'openInterestValue': {
-                    'alert_pcnt': 0.3,  # проценты
-                }
-            },
-            'XCNUSDT': {
-                'markPrice': {
-                    'alert_pcnt': 0.1,  # проценты
-                },
-                'openInterestValue': {
-                    'alert_pcnt': 0.1,  # проценты
-                },
-            },
-        },
-    }
+def settings(dirpath: str) -> dict:
+    filepatch = f'{dirpath}/settings.yaml'
 
-    return result
+    with open(filepatch) as fd:
+        result = yaml.safe_load(fd)
+
+        logger.info("Load settings %s", result)
+
+        return result
