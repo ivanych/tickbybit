@@ -11,7 +11,9 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 
-from tickbybit import diff, tickers, notify, settings, to_json
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+from tickbybit import diff, tickers, settings, to_json
 import tickbybit.files
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
@@ -24,10 +26,8 @@ DIRPATH = getenv("BOT_DIRPATH")
 logger.info("Env TOKEN=%s", TOKEN)
 logger.info("Env DIRPATH=%s", DIRPATH)
 
-# Настройки
 settings = settings('.settings')
-
-# All handlers should be attached to the Router (or Dispatcher)
+scheduler = AsyncIOScheduler()
 dp = Dispatcher()
 
 
@@ -35,19 +35,17 @@ dp = Dispatcher()
 async def command_start_handler(message: Message) -> None:
     await message.answer(f"Здрасьте-мордасьте, {html.bold(message.from_user.full_name)}!")
 
+
 @dp.message(Command("settings"))
 async def command_diff(message: Message) -> None:
     msg = to_json(settings)
     await message.answer(msg, parse_mode=ParseMode.MARKDOWN_V2)
 
+
 @dp.message(Command("diff"))
 async def command_diff(message: Message) -> None:
     # Загрузить новый прайс
-    new_tickers = await tickers()
-    await tickbybit.files.save(new_tickers, dirpath=DIRPATH)
-
-    # Удалить устаревшие прйсы
-    tickbybit.files.prune(dirpath=DIRPATH, period=5 * 60 * 1000)
+    await download_new_tickers(dirpath=DIRPATH)
 
     # Найти пару сравниваемых прайсов
     pair = tickbybit.files.pair(settings, dirpath=DIRPATH)
@@ -61,13 +59,28 @@ async def command_diff(message: Message) -> None:
         await message.answer(msg, parse_mode=ParseMode.MARKDOWN_V2)
 
 
+@scheduler.scheduled_job(trigger='interval', kwargs={'dirpath': DIRPATH}, seconds=60)
+async def download_new_tickers(dirpath: str) -> None:
+    new_tickers = await tickers()
+    await tickbybit.files.save(new_tickers, dirpath=dirpath)
+
+
+@scheduler.scheduled_job(trigger='interval',
+                         kwargs={'period': settings['period'], 'interval': settings['interval'], 'dirpath': DIRPATH},
+                         seconds=60)
+async def prune_old_tickers(period: int, interval: int, dirpath: str) -> None:
+    tickbybit.files.prune(period=period, interval=interval, dirpath=dirpath)
+
+
 async def main() -> None:
+    scheduler.start()
+
     # Initialize Bot instance with default bot properties which will be passed to all API calls
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+
     # And the run events dispatching
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, stream=sys.stderr)
     asyncio.run(main())

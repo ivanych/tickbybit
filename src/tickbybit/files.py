@@ -2,6 +2,10 @@ import os
 import json
 import aiofiles
 import aiofiles.os
+import logging
+
+logger = logging.getLogger("tickbybit.files")
+
 
 def pair(settings: dict, dirpath: str) -> dict:
     """
@@ -16,10 +20,11 @@ def pair(settings: dict, dirpath: str) -> dict:
 
     # Новый файл
     new_file = files[0]
-    print(f'new_file {new_file}')
+    logger.info("Identified new file %s", new_file)
 
     # Старый файл — первый файл в списке, который старше самого первого файла не более, period (каламбур, да...)
-    old_file = _old(files, settings['period'])
+    old_file = _old(files, period=settings['period'], interval=settings['interval'])
+    logger.info("Identified old file %s", old_file)
 
     result = {}
 
@@ -39,33 +44,28 @@ def _files(dirpath: str) -> list[int]:
     return sorted(map(int, files), reverse=True)
 
 
-def _old(files: list[int], period: int) -> int:
+def _old(files: list[int], period: int, interval: int) -> int:
     """
     Определить старый файл.
 
-    Это файл, который как можно старше первого файла, но не старше, чем на period.
-
-    Для устранения "дребезга" добавляем к периоду 10 секунд.
+    Это файл, который как можно старше первого файла, но не старше, чем на period+interval.
 
     :param files: Список названий файлов.
     :param period: Период сравнения (миллисекунды).
+    :param interval: Интервал обновления (миллисекунды).
     :return: Название старого файла.
     """
     # Возраст старого файла
-    debounce = 10 * 1000
-    age = files[0] - period - debounce
+    age = files[0] - period - interval
 
     result = None
 
     for file in files:
-
         if file > age:
             result = file
             continue
         else:
             break
-
-    print(f'_old: {result}')
 
     return result
 
@@ -74,16 +74,15 @@ async def save(tickers: dict, dirpath: str) -> None:
     async with aiofiles.open(f'{dirpath}/{tickers["time"]}', mode='w') as fd:
         await fd.write(tickers["json"])
 
-    print(f'save {tickers["time"]}')
+    logger.info("Save new file %s", tickers["time"])
 
 
-def prune(period: int, dirpath: str) -> list:
+def prune(period: int, interval: int, dirpath: str) -> list:
     # Список имеющихся файлов
     files = _files(dirpath=dirpath)
 
     # Возраст старого файла
-    debounce = 10 * 1000
-    age = files[0] - period - debounce
+    age = files[0] - period - interval
 
     result = []
 
@@ -92,6 +91,6 @@ def prune(period: int, dirpath: str) -> list:
             os.remove(f'{dirpath}/{file}')
             result.append(file)
 
-    print(f'prune {result}')
+    logger.info("Prune old files %s", result)
 
     return result
