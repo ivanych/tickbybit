@@ -17,7 +17,7 @@ def diff(settings: dict, pair: dict) -> list[dict]:
             'symbol': symbol,
             'is_alert': False,
             'time': pair['new']['time'],
-            'interval': pair['new']['time'] - pair['old']['time'],
+            'period': pair['new']['time'] - pair['old']['time'],
         }
 
         jsonpath = parse(f'result.list[?symbol = "{symbol}"]')
