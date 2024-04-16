@@ -25,7 +25,7 @@ logger.info("Env TOKEN=%s", TOKEN)
 logger.info("Env DIRPATH=%s", DIRPATH)
 
 # Настройки
-settings = settings()
+settings = settings('.settings')
 
 # All handlers should be attached to the Router (or Dispatcher)
 dp = Dispatcher()
@@ -35,6 +35,10 @@ dp = Dispatcher()
 async def command_start_handler(message: Message) -> None:
     await message.answer(f"Здрасьте-мордасьте, {html.bold(message.from_user.full_name)}!")
 
+@dp.message(Command("settings"))
+async def command_diff(message: Message) -> None:
+    msg = to_json(settings)
+    await message.answer(msg, parse_mode=ParseMode.MARKDOWN_V2)
 
 @dp.message(Command("diff"))
 async def command_diff(message: Message) -> None:

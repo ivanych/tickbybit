@@ -7,4 +7,5 @@ dependencies = [
     "jsonpath-ng",
     "aiofiles",
     "aiogram",
+    "pyyaml",
 ]
