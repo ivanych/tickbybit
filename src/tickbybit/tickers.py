@@ -8,6 +8,12 @@ from .ticker import Ticker
 class Tickers(RootModel):
     root: Dict[str, Any]
 
+    def __getitem__(self, item):
+        return self.root[item]
+
+    def __getattr__(self, item):
+        return self.root[item]
+
     def ticker(self, symbol: str) -> Ticker:
         # TODO поиск тикера в списке — это неэффективный способ,
         # нужно оптимизировать к поиску в словаре
