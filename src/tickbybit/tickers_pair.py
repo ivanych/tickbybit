@@ -42,7 +42,7 @@ class TickersPair(BaseModel):
 
             tickers_diff.append(ticker_diff)
 
-            break
+            # break
 
         return tickers_diff
 
