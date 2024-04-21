@@ -4,10 +4,12 @@ import aiofiles
 import aiofiles.os
 import logging
 
+from .tickers_pair import TickersPair
+
 logger = logging.getLogger("tickbybit.files")
 
 
-def pair(settings: dict, dirpath: str) -> dict:
+def pair(settings: dict, dirpath: str) -> TickersPair:
     """
     Получить пару сравниваемых прайсов из файлового хранилища.
 
@@ -26,16 +28,14 @@ def pair(settings: dict, dirpath: str) -> dict:
     old_file = _old(files, period=settings['period'], interval=settings['interval'])
     logger.info("Identified old file %s", old_file)
 
-    result = {}
-
     # Прочитать файлы
     old_fd = open(f'{dirpath}/{old_file}')
-    result['old'] = json.load(old_fd)
-
     new_fd = open(f'{dirpath}/{new_file}')
-    result['new'] = json.load(new_fd)
 
-    return result
+    return TickersPair(
+        old=json.load(old_fd),
+        new=json.load(new_fd),
+    )
 
 
 def _files(dirpath: str) -> list[int]:
