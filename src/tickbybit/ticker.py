@@ -1,9 +1,9 @@
-from typing import Dict
+from typing import Dict, Any
 from pydantic import RootModel
 
 
 class Ticker(RootModel):
-    root: Dict[str, str]
+    root: Dict[str, Any]
 
     def __getitem__(self, name):
         return self.root[name]
