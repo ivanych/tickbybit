@@ -15,3 +15,9 @@ class AttrsDiff(RootModel):
 
     def __getattr__(self, item):
         return self.root[item]
+
+    def is_alert(self) -> bool:
+        for attr in self.root:
+            if self.root[attr].is_alert:
+                return True
+        return False
