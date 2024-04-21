@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-from tickbybit import diff, tickers, notify, settings
-from tickbybit.files import pair, save, prune
+from tickbybit import settings
+from tickbybit.files import pair
 
 # Настройки
-settings = settings()
+settings = settings(dirpath='.settings')
 
 # Пара сравниваемых прайсов
-pair = pair(settings, dirpath='.tickers')
+tickers_pair = pair(settings, dirpath='.tickers')
 
 # Изменения в отслеживаемых тикерах
-diffs = diff(settings, pair)
+tickers_diff = tickers_pair.diff(settings)
 
-for dif in diffs:
-    notify(dif)
+for ticker_diff in tickers_diff:
+    print(ticker_diff.to_json())
