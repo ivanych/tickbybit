@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from .tickers import Tickers
 from .ticker import Ticker
+from .tickers_diff import TickersDiff
 from .ticker_diff import TickerDiff
 from .attrs_diff import AttrsDiff
 from .attr_diff import AttrDiff
@@ -17,7 +18,7 @@ class TickersPair(BaseModel):
     def period(self) -> int:
         return self.new.time - self.old.time
 
-    def diff(self, settings: dict) -> list[TickerDiff]:
+    def diff(self, settings: dict) -> TickersDiff:
         """
         Найти изменения в тикерах между старым и новым прайсами.
 
@@ -25,7 +26,7 @@ class TickersPair(BaseModel):
         :return: Список изменений тикеров.
         """
 
-        tickers_diff = []
+        tickers_diff = TickersDiff()
 
         # Цикл по тикерам нового прайса
         for ticker_new in self.new.list():
