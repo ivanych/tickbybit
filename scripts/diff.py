@@ -13,5 +13,10 @@ tickers_pair = pair(settings, dirpath='.tickers')
 tickers_diff = tickers_pair.diff(settings)
 
 # Вывод изменений
-for ticker_diff in tickers_diff.list():
-    print(ticker_diff.to_json())
+diffs = tickers_diff.all()
+
+if diffs:
+    for ticker_diff in diffs:
+        print(ticker_diff.to_json())
+else:
+    print("Уведомлений нет.")

@@ -53,9 +53,14 @@ async def command_diff(message: Message) -> None:
     tickers_diff = tickers_pair.diff(settings)
 
     # Вывод изменений в Телегу
-    for ticker_diff in tickers_diff.alert():
-        msg = ticker_diff.to_json()
-        await message.answer(msg)
+    diffs = tickers_diff.alert()
+
+    if diffs:
+        for ticker_diff in diffs:
+            msg = ticker_diff.to_json()
+            await message.answer(msg)
+    else:
+        await message.answer('Уведомлений нет.')
 
 
 @scheduler.scheduled_job(trigger='interval', kwargs={'dirpath': DIRPATH}, seconds=60)

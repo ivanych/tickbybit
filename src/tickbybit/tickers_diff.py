@@ -10,8 +10,8 @@ class TickersDiff(RootModel):
     def append(self, value):
         self.root.append(value)
 
-    def list(self):
+    def all(self) -> list[TickerDiff]:
         return self.root
 
-    def alert(self):
-        return filter(lambda x: x.is_alert, self.root)
+    def alert(self) -> list[TickerDiff]:
+        return list(filter(lambda x: x.is_alert, self.root))
