@@ -13,5 +13,5 @@ class TickersDiff(RootModel):
     def list(self):
         return self.root
 
-    def alerts(self):
+    def alert(self):
         return filter(lambda x: x.is_alert, self.root)
