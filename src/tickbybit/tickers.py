@@ -19,7 +19,12 @@ class Tickers(RootModel):
         # нужно оптимизировать к поиску в словаре
         jsonpath = parse(f'result.list[?symbol = "{symbol}"]')
 
-        return Ticker(jsonpath.find(self.root)[0].value)
+        matches = jsonpath.find(self.root)
+
+        if matches:
+            return Ticker(matches[0].value)
+        else:
+            return Ticker({})
 
     def list(self) -> map:
         return map(Ticker, self.root['result']['list'])

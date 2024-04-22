@@ -12,5 +12,6 @@ tickers_pair = pair(settings, dirpath='.tickers')
 # Изменения в отслеживаемых тикерах
 tickers_diff = tickers_pair.diff(settings)
 
-for ticker_diff in tickers_diff:
+# Вывод изменений
+for ticker_diff in tickers_diff.alerts():
     print(ticker_diff.to_json())
