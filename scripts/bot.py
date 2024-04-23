@@ -13,7 +13,8 @@ from aiogram.types import Message
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from tickbybit import tickers, settings, to_json
+from tickbybit import settings, to_json
+from tickbybit.bybit import tickers
 from tickbybit.files import save, pair, prune
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
@@ -43,11 +44,9 @@ async def command_diff(message: Message) -> None:
 
 
 @dp.message(Command("alert"))
-async def command_diff(message: Message) -> None:
-    await message.answer('alert: принято, ожидайте...')
-
+async def command_alert(message: Message) -> None:
     # Пара сравниваемых прайсов
-    tickers_pair = pair(settings, dirpath='.tickers')
+    tickers_pair = await pair(settings, dirpath='.tickers')
 
     # Изменения в отслеживаемых тикерах
     tickers_diff = tickers_pair.diff(settings)
@@ -66,7 +65,7 @@ async def command_diff(message: Message) -> None:
 @scheduler.scheduled_job(trigger='interval', kwargs={'dirpath': DIRPATH}, seconds=60)
 async def download_new_tickers(dirpath: str) -> None:
     new_tickers = await tickers()
-    await save(new_tickers, dirpath=dirpath)
+    await save(new_tickers['tickers'], time=new_tickers['time'], dirpath=dirpath)
 
 
 @scheduler.scheduled_job(trigger='interval',
