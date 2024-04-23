@@ -29,7 +29,7 @@ class TickersPair(BaseModel):
         tickers_diff = TickersDiff()
 
         # Цикл по тикерам нового прайса
-        for ticker_new in self.new.list():
+        for ticker_new in self.new.all():
             ticker_old = self.old.ticker(symbol=ticker_new.symbol)
 
             attrs_diff = self._attrs_diff(settings, ticker_old, ticker_new)

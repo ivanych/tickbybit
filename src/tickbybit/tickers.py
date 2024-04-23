@@ -1,30 +1,24 @@
-from jsonpath_ng.ext import parse
 from typing import Dict, Any
-from pydantic import RootModel
+from pydantic import BaseModel
 
 from .ticker import Ticker
 
 
-class Tickers(RootModel):
-    root: Dict[str, Any]
+class Tickers(BaseModel):
+    time: int
+    tickers: Dict[str, Any]
 
     def __getitem__(self, item):
-        return self.root[item]
+        return self.tickers[item]
 
     def __getattr__(self, item):
-        return self.root[item]
+        return self.tickers[item]
 
     def ticker(self, symbol: str) -> Ticker:
-        # TODO поиск тикера в списке — это неэффективный способ,
-        # нужно оптимизировать к поиску в словаре
-        jsonpath = parse(f'result.list[?symbol = "{symbol}"]')
-
-        matches = jsonpath.find(self.root)
-
-        if matches:
-            return Ticker(matches[0].value)
+        if symbol in self.tickers:
+            return Ticker(self.tickers[symbol])
         else:
             return Ticker({})
 
-    def list(self) -> map:
-        return map(Ticker, self.root['result']['list'])
+    def all(self) -> map:
+        return map(Ticker, self.tickers.values())
