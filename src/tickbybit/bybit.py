@@ -1,7 +1,7 @@
 import httpx
 
 
-async def tickers() -> dict:
+async def get_market_tickers() -> dict:
     async with httpx.AsyncClient() as client:
         response = await client.get(
             url='https://api.bybit.com/v5/market/tickers',
@@ -10,9 +10,15 @@ async def tickers() -> dict:
             },
         )
 
-        response_data = response.json()
+        return response.json()
 
-        return {
-            'time': response_data['time'],
-            'json': response.text,
+
+async def tickers() -> dict:
+    bybit_tickers = await get_market_tickers()
+
+    return {
+        'time': int(bybit_tickers['time']),
+        'tickers': {
+            ticker['symbol']: ticker for ticker in bybit_tickers['result']['list']
         }
+    }
