@@ -1,24 +1,13 @@
+from typing import Any
 import yaml
 import logging
 from jsonpath_ng import parse
 import re
-import pprint
 
 logger = logging.getLogger("tickbybit.settings")
 
 
 def settings(dirpath: str) -> dict:
-    filepatch = f'{dirpath}/settings.yaml'
-
-    with open(filepatch) as fd:
-        result = yaml.safe_load(fd)
-
-        logger.info("Load settings %s", result)
-
-        return result
-
-
-def _load(dirpath: str) -> dict:
     filepatch = f'{dirpath}/settings.yaml'
 
     with open(filepatch) as fd:
@@ -54,59 +43,82 @@ settings_default = {
 }
 
 
-def set_key(dirpath: str, path: str, value: str | list | dict = None) -> dict:
+def set_key(dirpath: str, path: str, value: Any = None) -> dict:
     jsonpath = parse(path)
     jsonvalue = value
 
-    settings_old = _load(dirpath=dirpath)
-    pprint.pprint(settings_old)
+    settings_old = settings(dirpath=dirpath)
 
     # Исключения и дефолты
+    # tickers
     if path == 'tickers':
-        raise Exception(f'Нельзя устанавливать ключ {path}.')
+        raise Exception(f'Нельзя устанавливать ключ tickers')
+
+    # tickers.<symbol>
     elif re.match('tickers\.\w+$', path):
-        # Нельзя устанавливать уже установленный ключ
-        jsonpath = parse(path)
+        # нельзя устанавливать уже установленный ключ
         matches = jsonpath.find(settings_old)
         if matches:
-            raise Exception(f'Ключ {path} уже установлен.')
+            raise Exception(f'Ключ {path} уже установлен')
 
+        # дефолт
         jsonvalue = settings_default['tickers']['SYMBOL']
 
+    # ticker
+    elif re.match('ticker$', path):
+        raise Exception(f'Нельзя устанавливать ключ ticker')
+
+    # ticker.<attr>.<key>
+    elif re.match('ticker\.\w+\.\w+$', path):
+        if re.match('ticker\.\w+\.alert_pcnt$', path):
+            pass
+        else:
+            # TODO тут надо бы часть <attr> показывать именно как плейсхолдер <attr>, а не как буквальное значение
+            raise Exception(f'Ключ {path} не поддерживается')
 
     else:
-        raise Exception(f'Ой! Установка ключа {path} пока не доделана.')
-
+        raise Exception(f'Установка ключа {path} пока не реализована')
 
     settings_new = jsonpath.update_or_create(settings_old, jsonvalue)
 
-    #pprint.pprint(settings_new)
+    logger.info("Set settings key %s: %s", path, value)
 
     _save(data=settings_new, dirpath=dirpath)
 
     return settings_new
 
 
-def del_key( dirpath: str, path: str):
+def del_key(dirpath: str, path: str):
     jsonpath = parse(path)
 
-    settings_old = _load(dirpath=dirpath)
-    pprint.pprint(settings_old)
+    settings_old = settings(dirpath=dirpath)
 
     # Исключения и дефолты
+    # tickers
     if path == 'tickers':
-        raise Exception(f'Нельзя удалять ключ {path}.')
-    elif re.match('tickers\.\w+$', path):
+        raise Exception(f'Нельзя удалять ключ tickers')
+
+    # ticker
+    elif re.match('ticker$', path):
+        raise Exception(f'Нельзя удалять ключ ticker')
+
+    # ticker.<attr>
+    elif re.match('ticker\.\w+$', path):
+        # ticker.markPrice - нельзя удалять, хотя бы один атрибут нужно оставить на всякий случай
+        if re.match('ticker\.markPrice$', path):
+            raise Exception(f'Нельзя удалять ключ ticker.markPrice')
         pass
 
+    # ticker.<attr>.<key>
+    elif re.match('ticker\.\w+\.\w+$', path):
+        raise Exception(f'Нельзя удалять ключ ticker.<attr>.<key>')
 
     else:
-        raise Exception(f'Ой! Удаление ключа {path} пока не доделано.')
-
+        raise Exception(f'Удаление ключа {path} пока не реализовано')
 
     settings_new = jsonpath.filter(lambda d: True, settings_old)
 
-    #pprint.pprint(settings_new)
+    logger.info("Del settings key %s", path)
 
     _save(data=settings_new, dirpath=dirpath)
 
