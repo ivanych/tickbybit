@@ -1,13 +1,22 @@
 #!/usr/bin/env python
 
+import sys
+import logging
+import yaml
+
 from tickbybit.settings import set_key, del_key
 
-dirpath = '.settings'
+logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 
-path='tickers.BTCUSDT1'
-value= {'k1':'v1', 'k2': 'v2'}
+# Установить ключ
+path = 'ticker.blabla.alert_pcnt'
+value = 42
 
-# Настройки
-#set_key(dirpath=dirpath, path=path)
+settings_new = set_key(dirpath='.settings', path=path, value=value)
+print(yaml.dump(settings_new))
 
-del_key(dirpath=dirpath, path=path)
+# Удалить ключ
+path = 'ticker.blabla'
+
+settings_new = del_key(dirpath='.settings', path=path)
+print(yaml.dump(settings_new))
