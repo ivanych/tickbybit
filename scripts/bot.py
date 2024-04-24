@@ -15,9 +15,10 @@ from aiogram.exceptions import AiogramError
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from tickbybit import diff, tickers, settings, to_json
+from tickbybit import settings, to_json
 from tickbybit.settings import set_key, del_key
-import tickbybit.files
+from tickbybit.bybit import tickers
+from tickbybit.files import save, pair, prune
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 
@@ -55,6 +56,24 @@ async def command_diff(message: Message) -> None:
     await message.answer(msg, parse_mode=ParseMode.MARKDOWN_V2)
 
 
+@dp.message(Command("alert"))
+async def command_alert(message: Message) -> None:
+    # Пара сравниваемых прайсов
+    tickers_pair = await pair(settings, dirpath='.tickers')
+
+    # Изменения в отслеживаемых тикерах
+    tickers_diff = tickers_pair.diff(settings)
+
+    # Вывод изменений в Телегу
+    diffs = tickers_diff.alert()
+
+    if diffs:
+        for ticker_diff in diffs:
+            msg = ticker_diff.to_json()
+            await message.answer(msg)
+    else:
+        await message.answer('Уведомлений нет.')
+
 @dp.message(Command("set"))
 async def command_set(message: Message, command: CommandObject) -> None:
     global settings
@@ -80,35 +99,17 @@ async def command_del(message: Message, command: CommandObject) -> None:
 
     await message.answer(text)
 
-
-@dp.message(Command("diff"))
-async def command_diff(message: Message) -> None:
-    # Загрузить новый прайс
-    await download_new_tickers(dirpath=DIRPATH)
-
-    # Найти пару сравниваемых прайсов
-    pair = tickbybit.files.pair(settings, dirpath=DIRPATH)
-
-    # Найти изменения в отслеживаемых тикерах
-    diffs = diff(settings, pair)
-
-    # Отправить в Телегу найденные изменения
-    for dif in diffs:
-        msg = to_json(dif)
-        await message.answer(msg, parse_mode=ParseMode.MARKDOWN_V2)
-
-
 @scheduler.scheduled_job(trigger='interval', kwargs={'dirpath': DIRPATH}, seconds=60)
 async def download_new_tickers(dirpath: str) -> None:
     new_tickers = await tickers()
-    await tickbybit.files.save(new_tickers, dirpath=dirpath)
+    await save(new_tickers['tickers'], time=new_tickers['time'], dirpath=dirpath)
 
 
 @scheduler.scheduled_job(trigger='interval',
                          kwargs={'period': settings['period'], 'interval': settings['interval'], 'dirpath': DIRPATH},
                          seconds=60)
 async def prune_old_tickers(period: int, interval: int, dirpath: str) -> None:
-    tickbybit.files.prune(period=period, interval=interval, dirpath=dirpath)
+    prune(period=period, interval=interval, dirpath=dirpath)
 
 
 async def main() -> None:

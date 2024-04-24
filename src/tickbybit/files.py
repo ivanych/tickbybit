@@ -1,13 +1,16 @@
 import os
-import json
 import aiofiles
 import aiofiles.os
 import logging
+import pickle
+
+from .tickers_pair import TickersPair
+from .tickers import Tickers
 
 logger = logging.getLogger("tickbybit.files")
 
 
-def pair(settings: dict, dirpath: str) -> dict:
+async def pair(settings: dict, dirpath: str) -> TickersPair:
     """
     Получить пару сравниваемых прайсов из файлового хранилища.
 
@@ -26,16 +29,14 @@ def pair(settings: dict, dirpath: str) -> dict:
     old_file = _old(files, period=settings['period'], interval=settings['interval'])
     logger.info("Identified old file %s", old_file)
 
-    result = {}
-
     # Прочитать файлы
-    old_fd = open(f'{dirpath}/{old_file}')
-    result['old'] = json.load(old_fd)
+    old = await load(time=old_file, dirpath=dirpath)
+    new = await load(time=new_file, dirpath=dirpath)
 
-    new_fd = open(f'{dirpath}/{new_file}')
-    result['new'] = json.load(new_fd)
-
-    return result
+    return TickersPair(
+        old=Tickers(time=old_file, tickers=old),
+        new=Tickers(time=new_file, tickers=new),
+    )
 
 
 def _files(dirpath: str) -> list[int]:
@@ -70,11 +71,24 @@ def _old(files: list[int], period: int, interval: int) -> int:
     return result
 
 
-async def save(tickers: dict, dirpath: str) -> None:
-    async with aiofiles.open(f'{dirpath}/{tickers["time"]}', mode='w') as fd:
-        await fd.write(tickers["json"])
+async def save(tickers: dict, time: int, dirpath: str) -> None:
+    tickers_pickle = pickle.dumps(tickers)
 
-    logger.info("Save new file %s", tickers["time"])
+    async with aiofiles.open(f'{dirpath}/{time}', mode='wb') as fd:
+        await fd.write(tickers_pickle)
+
+    logger.info("Save new file %s", time)
+
+
+async def load(time: int, dirpath: str) -> dict:
+    async with aiofiles.open(f'{dirpath}/{time}', mode='rb') as fd:
+        tickers_pickle = await fd.read()
+
+    tickers = pickle.loads(tickers_pickle)
+
+    logger.info("Load file %s", time)
+
+    return tickers
 
 
 def prune(period: int, interval: int, dirpath: str) -> list:
