@@ -3,17 +3,21 @@
 import asyncio
 import logging
 import sys
+import re
 from os import getenv
 
-from aiogram import Bot, Dispatcher, html
+from aiogram import Bot, Dispatcher, html, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart, Command, CommandObject, Filter
 from aiogram.types import Message
+from aiogram.filters.exception import ExceptionTypeFilter
+from aiogram.exceptions import AiogramError
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from tickbybit import settings, to_json
+from tickbybit import to_json
+from tickbybit.settings import settings, set_key, del_key
 from tickbybit.bybit import tickers
 from tickbybit.files import save, pair, prune
 
@@ -30,6 +34,15 @@ logger.info("Env DIRPATH=%s", DIRPATH)
 settings = settings('.settings')
 scheduler = AsyncIOScheduler()
 dp = Dispatcher()
+
+
+@dp.error(ExceptionTypeFilter(Exception), F.update.message.as_("message"))
+async def error_handler(event, message: Message):
+    logger.critical("Critical error caused by %s", event.exception, exc_info=True)
+    await message.answer("ERROR. Произошёл какой-то непредусмотренный сбой. "
+                         "Возможно, в настройки было записано что-то, что бот не может нормально обработать. "
+                         "Можно попробовать удалить это из настроек.\n\n"
+                         "Посмотреть настройки — /settings")
 
 
 @dp.message(CommandStart())
@@ -60,6 +73,41 @@ async def command_alert(message: Message) -> None:
             await message.answer(msg)
     else:
         await message.answer('Уведомлений нет.')
+
+
+@dp.message(Command("set"))
+async def command_set(message: Message, command: CommandObject) -> None:
+    global settings
+
+    # Разбор аргумента
+    args = re.split(r'\s*:\s*', command.args.strip(), 1)
+    path = args[0]
+    value = (args[1:] + [None])[0]
+
+    try:
+        settings = set_key(dirpath='.settings', path=path, value=value)
+        text = 'Ключ установлен.\n\nПосмотреть настройки — /settings'
+    except Exception as e:
+        text = str(e)
+
+    await message.answer(text)
+
+
+@dp.message(Command("del"))
+async def command_del(message: Message, command: CommandObject) -> None:
+    global settings
+
+    # Разбор аргумента
+    args = re.split(r'\s*:\s*', command.args.strip(), 1)
+    path = args[0]
+
+    try:
+        settings = del_key(dirpath='.settings', path=path)
+        text = 'Ключ удалён.\n\nПосмотреть настройки — /settings'
+    except Exception as e:
+        text = str(e)
+
+    await message.answer(text)
 
 
 @scheduler.scheduled_job(trigger='interval', kwargs={'dirpath': DIRPATH}, seconds=60)
