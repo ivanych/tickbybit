@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
+import sys
+import logging
 import asyncio
 
-from tickbybit import settings
+from tickbybit import settings, format
 from tickbybit.files import pair
+
+logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 
 
 async def main():
@@ -21,7 +25,7 @@ async def main():
 
     if diffs:
         for ticker_diff in diffs:
-            print(ticker_diff.to_json())
+            print(format(td=ticker_diff, settings=settings_dict))
     else:
         print("Уведомлений нет.")
 

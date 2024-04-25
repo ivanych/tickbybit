@@ -12,11 +12,10 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command, CommandObject, Filter
 from aiogram.types import Message
 from aiogram.filters.exception import ExceptionTypeFilter
-from aiogram.exceptions import AiogramError
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from tickbybit import to_json
+from tickbybit import format, to_yaml
 from tickbybit.settings import settings, set_key, del_key
 from tickbybit.bybit import tickers
 from tickbybit.files import save, pair, prune
@@ -52,8 +51,8 @@ async def command_start_handler(message: Message) -> None:
 
 @dp.message(Command("settings"))
 async def command_diff(message: Message) -> None:
-    msg = to_json(settings)
-    await message.answer(msg, parse_mode=ParseMode.MARKDOWN_V2)
+    msg = to_yaml(settings)
+    await message.answer(msg)
 
 
 @dp.message(Command("alert"))
@@ -69,7 +68,7 @@ async def command_alert(message: Message) -> None:
 
     if diffs:
         for ticker_diff in diffs:
-            msg = ticker_diff.to_json()
+            msg = format(td=ticker_diff, settings=settings)
             await message.answer(msg)
     else:
         await message.answer('Уведомлений нет.')
