@@ -54,7 +54,7 @@ def set_key(dirpath: str, path: str, value: Any = None) -> dict:
     if path == 'tickers':
         raise Exception(f'Нельзя устанавливать ключ tickers')
 
-    # tickers.<symbol>
+    # tickers.[symbol]
     elif re.match('tickers\.\w+$', path):
         # нельзя устанавливать уже установленный ключ
         matches = jsonpath.find(settings_old)
@@ -68,12 +68,16 @@ def set_key(dirpath: str, path: str, value: Any = None) -> dict:
     elif re.match('ticker$', path):
         raise Exception(f'Нельзя устанавливать ключ ticker')
 
-    # ticker.<attr>.<key>
+    # ticker.[attr].[key]
     elif re.match('ticker\.\w+\.\w+$', path):
         if re.match('ticker\.\w+\.alert_pcnt$', path):
-            pass
+            if value is None:
+                jsonvalue = 1
+            else:
+                # TODO тут надо бы перехватить исключение и вывести более читабельное сообщение
+                jsonvalue = float(value)
         else:
-            # TODO тут надо бы часть <attr> показывать именно как плейсхолдер <attr>, а не как буквальное значение
+            # TODO тут надо бы часть [attr] показывать именно как плейсхолдер [attr], а не как буквальное значение
             raise Exception(f'Ключ {path} не поддерживается')
 
     else:
@@ -81,14 +85,14 @@ def set_key(dirpath: str, path: str, value: Any = None) -> dict:
 
     settings_new = jsonpath.update_or_create(settings_old, jsonvalue)
 
-    logger.info("Set settings key %s: %s", path, value)
+    logger.info("Set settings key %s: %s", path, jsonvalue)
 
     _save(data=settings_new, dirpath=dirpath)
 
     return settings_new
 
 
-def del_key(dirpath: str, path: str):
+def del_key(dirpath: str, path: str) -> dict:
     jsonpath = parse(path)
 
     settings_old = settings(dirpath=dirpath)
@@ -102,16 +106,16 @@ def del_key(dirpath: str, path: str):
     elif re.match('ticker$', path):
         raise Exception(f'Нельзя удалять ключ ticker')
 
-    # ticker.<attr>
+    # ticker.[attr]
     elif re.match('ticker\.\w+$', path):
         # ticker.markPrice - нельзя удалять, хотя бы один атрибут нужно оставить на всякий случай
         if re.match('ticker\.markPrice$', path):
             raise Exception(f'Нельзя удалять ключ ticker.markPrice')
         pass
 
-    # ticker.<attr>.<key>
+    # ticker.[attr].[key]
     elif re.match('ticker\.\w+\.\w+$', path):
-        raise Exception(f'Нельзя удалять ключ ticker.<attr>.<key>')
+        raise Exception(f'Нельзя удалять ключ ticker.[attr].[key]')
 
     else:
         raise Exception(f'Удаление ключа {path} пока не реализовано')
