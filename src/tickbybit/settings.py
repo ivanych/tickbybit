@@ -30,6 +30,7 @@ def _save(data: dict, dirpath: str):
 settings_default = {
     "period": 300000,
     "interval": 60000,
+    "format": "json",
     "tickers": {
         "SYMBOL": {
             "markPrice": {
@@ -53,6 +54,11 @@ def set_key(dirpath: str, path: str, value: Any = None) -> dict:
     # tickers
     if path == 'tickers':
         raise Exception(f'Нельзя устанавливать ключ tickers')
+
+    elif re.match('format$', path):
+        frmts = ['json', 'yaml', 'str1', 'str2', 'str3', 'str4']
+        frmt = '|'.join(frmts)
+        assert re.match(f'({frmt})$', value), f'Допустимые форматы: {frmts}'
 
     # tickers.[symbol]
     elif re.match('tickers\.\w+$', path):
@@ -101,6 +107,9 @@ def del_key(dirpath: str, path: str) -> dict:
     # tickers
     if path == 'tickers':
         raise Exception(f'Нельзя удалять ключ tickers')
+
+    elif re.match('format$', path):
+        raise Exception(f'Нельзя удалять ключ format')
 
     # ticker
     elif re.match('ticker$', path):
