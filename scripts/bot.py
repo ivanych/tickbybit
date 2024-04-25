@@ -51,8 +51,9 @@ async def command_start_handler(message: Message) -> None:
 
 @dp.message(Command("settings"))
 async def command_diff(message: Message) -> None:
-    msg = to_yaml(settings)
-    await message.answer(msg)
+    msg_yaml = to_yaml(settings)
+    msg_yaml_md = f"```YAML\n{msg_yaml}```"
+    await message.answer(msg_yaml_md, parse_mode=ParseMode.MARKDOWN_V2)
 
 
 @dp.message(Command("alert"))
