@@ -56,7 +56,7 @@ def set_key(dirpath: str, path: str, value: Any = None) -> dict:
         raise Exception(f'Нельзя устанавливать ключ tickers')
 
     elif re.match('format$', path):
-        frmts = ['json', 'yaml', 'str1', 'str2']
+        frmts = ['json', 'yaml', 'str1', 'str2', 'str3', 'str4']
         frmt = '|'.join(frmts)
         assert re.match(f'({frmt})$', value), f'Допустимые форматы: {frmts}'
 
