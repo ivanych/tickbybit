@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import sys
+import re
 from os import getenv
 
 from aiogram import Bot, Dispatcher, html, F
@@ -15,8 +16,8 @@ from aiogram.exceptions import AiogramError
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from tickbybit import settings, to_json
-from tickbybit.settings import set_key, del_key
+from tickbybit import to_json
+from tickbybit.settings import settings, set_key, del_key
 from tickbybit.bybit import tickers
 from tickbybit.files import save, pair, prune
 
@@ -39,10 +40,9 @@ dp = Dispatcher()
 async def error_handler(event, message: Message):
     logger.critical("Critical error caused by %s", event.exception, exc_info=True)
     await message.answer("ERROR. Произошёл какой-то непредусмотренный сбой. "
-                         "Иванов что-то криво запрограммировал. "
-                         "Скорее всего в настройки записано что-то, что бот не может нормально обработать. "
+                         "Возможно, в настройки было записано что-то, что бот не может нормально обработать. "
                          "Можно попробовать удалить это из настроек.\n\n"
-                         "Посмотреть все настройки — /settings")
+                         "Посмотреть настройки — /settings")
 
 
 @dp.message(CommandStart())
@@ -74,13 +74,19 @@ async def command_alert(message: Message) -> None:
     else:
         await message.answer('Уведомлений нет.')
 
+
 @dp.message(Command("set"))
 async def command_set(message: Message, command: CommandObject) -> None:
     global settings
 
+    # Разбор аргумента
+    args = re.split(r'\s*:\s*', command.args.strip(), 1)
+    path = args[0]
+    value = (args[1:] + [None])[0]
+
     try:
-        settings = set_key(dirpath='.settings', path=command.args)
-        text = 'OK.\n\nПосмотреть все настройки — /settings'
+        settings = set_key(dirpath='.settings', path=path, value=value)
+        text = 'Ключ установлен.\n\nПосмотреть настройки — /settings'
     except Exception as e:
         text = str(e)
 
@@ -91,13 +97,18 @@ async def command_set(message: Message, command: CommandObject) -> None:
 async def command_del(message: Message, command: CommandObject) -> None:
     global settings
 
+    # Разбор аргумента
+    args = re.split(r'\s*:\s*', command.args.strip(), 1)
+    path = args[0]
+
     try:
-        settings = del_key(dirpath='.settings', path=command.args)
-        text = 'OK.\n\nПосмотреть все настройки — /settings'
+        settings = del_key(dirpath='.settings', path=path)
+        text = 'Ключ удалён.\n\nПосмотреть настройки — /settings'
     except Exception as e:
         text = str(e)
 
     await message.answer(text)
+
 
 @scheduler.scheduled_job(trigger='interval', kwargs={'dirpath': DIRPATH}, seconds=60)
 async def download_new_tickers(dirpath: str) -> None:
