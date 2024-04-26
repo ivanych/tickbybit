@@ -113,6 +113,42 @@ async def command_del(message: Message, command: CommandObject) -> None:
     await message.answer(text)
 
 
+@dp.message(Command("on"))
+async def command_on(message: Message) -> None:
+    global settings
+
+    path = 'is_auto'
+    value = 'true'
+
+    try:
+        scheduler.resume_job(f"schedule_alert_{CHAT_ID}")
+
+        settings = set_key(dirpath='.settings', path=path, value=value)
+        text = f"Автоматическая отправка уведомлений включена ({path}: {value})."
+    except Exception as e:
+        text = str(e)
+
+    await message.answer(text)
+
+
+@dp.message(Command("off"))
+async def command_off(message: Message) -> None:
+    global settings
+
+    path = 'is_auto'
+    value = 'false'
+
+    try:
+        scheduler.pause_job(f"schedule_alert_{CHAT_ID}")
+
+        settings = set_key(dirpath='.settings', path=path, value=value)
+        text = f"Автоматическая отправка уведомлений выключена ({path}: {value})."
+    except Exception as e:
+        text = str(e)
+
+    await message.answer(text)
+
+
 @scheduler.scheduled_job(trigger='interval', kwargs={'dirpath': DIRPATH}, seconds=60)
 async def download_new_tickers(dirpath: str) -> None:
     new_tickers = await tickers()
@@ -153,8 +189,13 @@ async def main() -> None:
         func=schedule_alert,
         trigger='interval',
         kwargs={'bot': bot, 'dir_path': DIRPATH, 'chat_id': CHAT_ID},
-        seconds=60,
+        id=f"schedule_alert_{CHAT_ID}",
+        next_run_time=None,  # None здесь чтобы задача создавалась на паузе
+        seconds=5,
     )
+
+    if settings['is_auto']:
+        scheduler.resume_job(f"schedule_alert_{CHAT_ID}")
 
     scheduler.start()
 
