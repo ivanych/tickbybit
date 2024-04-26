@@ -26,9 +26,11 @@ logger = logging.getLogger("tickbybit")
 
 TOKEN = getenv("BOT_TOKEN")
 DIRPATH = getenv("BOT_DIRPATH")
+CHAT_ID = getenv("BOT_CHAT_ID")
 
 logger.info("Env TOKEN=%s", TOKEN)
 logger.info("Env DIRPATH=%s", DIRPATH)
+logger.info("Env CHAT_ID=%s", CHAT_ID)
 
 settings = settings('.settings')
 scheduler = AsyncIOScheduler()
@@ -64,9 +66,10 @@ async def command_alert(message: Message) -> None:
     # Изменения в отслеживаемых тикерах
     tickers_diff = tickers_pair.diff(settings)
 
-    # Вывод изменений в Телегу
+    # Изменения с уведомлениями
     diffs = tickers_diff.alert()
 
+    # Отправка уведомлений в телегу
     if diffs:
         for ticker_diff in diffs:
             msg = format(td=ticker_diff, settings=settings)
@@ -110,6 +113,42 @@ async def command_del(message: Message, command: CommandObject) -> None:
     await message.answer(text)
 
 
+@dp.message(Command("on"))
+async def command_on(message: Message) -> None:
+    global settings
+
+    path = 'is_auto'
+    value = 'true'
+
+    try:
+        scheduler.resume_job(f"schedule_alert_{CHAT_ID}")
+
+        settings = set_key(dirpath='.settings', path=path, value=value)
+        text = f"Автоматическая отправка уведомлений включена ({path}: {value})."
+    except Exception as e:
+        text = str(e)
+
+    await message.answer(text)
+
+
+@dp.message(Command("off"))
+async def command_off(message: Message) -> None:
+    global settings
+
+    path = 'is_auto'
+    value = 'false'
+
+    try:
+        scheduler.pause_job(f"schedule_alert_{CHAT_ID}")
+
+        settings = set_key(dirpath='.settings', path=path, value=value)
+        text = f"Автоматическая отправка уведомлений выключена ({path}: {value})."
+    except Exception as e:
+        text = str(e)
+
+    await message.answer(text)
+
+
 @scheduler.scheduled_job(trigger='interval', kwargs={'dirpath': DIRPATH}, seconds=60)
 async def download_new_tickers(dirpath: str) -> None:
     new_tickers = await tickers()
@@ -123,13 +162,43 @@ async def prune_old_tickers(period: int, interval: int, dirpath: str) -> None:
     prune(period=period, interval=interval, dirpath=dirpath)
 
 
-async def main() -> None:
-    scheduler.start()
+async def schedule_alert(bot: Bot, dir_path: str, chat_id: int) -> None:
+    # Пара сравниваемых прайсов
+    tickers_pair = await pair(settings, dirpath=dir_path)
 
-    # Initialize Bot instance with default bot properties which will be passed to all API calls
+    # Изменения в отслеживаемых тикерах
+    tickers_diff = tickers_pair.diff(settings)
+
+    # Изменения с уведомлениями
+    diffs = tickers_diff.alert()
+
+    # Отправка уведомлений в телегу
+    for ticker_diff in diffs:
+        msg = format(td=ticker_diff, settings=settings)
+
+        await bot.send_message(
+            chat_id=chat_id,
+            text=msg,
+        )
+
+
+async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
-    # And the run events dispatching
+    scheduler.add_job(
+        func=schedule_alert,
+        trigger='interval',
+        kwargs={'bot': bot, 'dir_path': DIRPATH, 'chat_id': CHAT_ID},
+        id=f"schedule_alert_{CHAT_ID}",
+        next_run_time=None,  # None здесь чтобы задача создавалась на паузе
+        seconds=5,
+    )
+
+    if settings['is_auto']:
+        scheduler.resume_job(f"schedule_alert_{CHAT_ID}")
+
+    scheduler.start()
+
     await dp.start_polling(bot)
 
 
