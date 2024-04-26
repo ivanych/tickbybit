@@ -62,7 +62,7 @@ def set_key(dirpath: str, path: str, value: Any = None) -> dict:
         jsonvalue = True if value == 'true' else False
 
     elif re.match('format$', path):
-        vals = ['json', 'yaml', 'str1', 'str2', 'str3', 'str4']
+        vals = ['json', 'yaml', 'str1', 'str2', 'str3', 'str4', 'tpl1p', 'tpl2p']
         val = '|'.join(vals)
         assert re.match(f'({val})$', value), f'Допустимые значения: {vals}'
 
