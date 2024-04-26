@@ -26,9 +26,11 @@ logger = logging.getLogger("tickbybit")
 
 TOKEN = getenv("BOT_TOKEN")
 DIRPATH = getenv("BOT_DIRPATH")
+CHAT_ID = getenv("BOT_CHAT_ID")
 
 logger.info("Env TOKEN=%s", TOKEN)
 logger.info("Env DIRPATH=%s", DIRPATH)
+logger.info("Env CHAT_ID=%s", CHAT_ID)
 
 settings = settings('.settings')
 scheduler = AsyncIOScheduler()
@@ -64,9 +66,10 @@ async def command_alert(message: Message) -> None:
     # Изменения в отслеживаемых тикерах
     tickers_diff = tickers_pair.diff(settings)
 
-    # Вывод изменений в Телегу
+    # Изменения с уведомлениями
     diffs = tickers_diff.alert()
 
+    # Отправка уведомлений в телегу
     if diffs:
         for ticker_diff in diffs:
             msg = format(td=ticker_diff, settings=settings)
@@ -123,13 +126,38 @@ async def prune_old_tickers(period: int, interval: int, dirpath: str) -> None:
     prune(period=period, interval=interval, dirpath=dirpath)
 
 
-async def main() -> None:
-    scheduler.start()
+async def schedule_alert(bot: Bot, dir_path: str, chat_id: int) -> None:
+    # Пара сравниваемых прайсов
+    tickers_pair = await pair(settings, dirpath=dir_path)
 
-    # Initialize Bot instance with default bot properties which will be passed to all API calls
+    # Изменения в отслеживаемых тикерах
+    tickers_diff = tickers_pair.diff(settings)
+
+    # Изменения с уведомлениями
+    diffs = tickers_diff.alert()
+
+    # Отправка уведомлений в телегу
+    for ticker_diff in diffs:
+        msg = format(td=ticker_diff, settings=settings)
+
+        await bot.send_message(
+            chat_id=chat_id,
+            text=msg,
+        )
+
+
+async def main() -> None:
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
-    # And the run events dispatching
+    scheduler.add_job(
+        func=schedule_alert,
+        trigger='interval',
+        kwargs={'bot': bot, 'dir_path': DIRPATH, 'chat_id': CHAT_ID},
+        seconds=60,
+    )
+
+    scheduler.start()
+
     await dp.start_polling(bot)
 
 
