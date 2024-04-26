@@ -6,6 +6,7 @@ services:
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
       - BOT_DIRPATH=${BOT_DIRPATH}
+      - BOT_CHAT_ID=${BOT_CHAT_ID}
     volumes:
       - settings:/app/.settings
     restart: unless-stopped

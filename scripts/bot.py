@@ -191,7 +191,7 @@ async def main() -> None:
         kwargs={'bot': bot, 'dir_path': DIRPATH, 'chat_id': CHAT_ID},
         id=f"schedule_alert_{CHAT_ID}",
         next_run_time=None,  # None здесь чтобы задача создавалась на паузе
-        seconds=5,
+        seconds=60,
     )
 
     if settings['is_auto']:
