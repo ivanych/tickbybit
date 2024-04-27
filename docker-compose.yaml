@@ -7,6 +7,7 @@ services:
       - BOT_TOKEN=${BOT_TOKEN}
       - BOT_DIRPATH=${BOT_DIRPATH}
       - BOT_CHAT_ID=${BOT_CHAT_ID}
+      - ALLOWED_USERS=${ALLOWED_USERS}
     volumes:
       - settings:/app/.settings
     restart: unless-stopped
