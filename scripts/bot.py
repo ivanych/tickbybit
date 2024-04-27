@@ -19,6 +19,7 @@ from tickbybit import format, to_yaml
 from tickbybit.settings import settings, set_key, del_key
 from tickbybit.bybit import tickers
 from tickbybit.files import save, pair, prune
+from tickbybit.middlewares.access import AccessMiddleware
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 
@@ -26,11 +27,12 @@ logger = logging.getLogger("tickbybit")
 
 TOKEN = getenv("BOT_TOKEN")
 DIRPATH = getenv("BOT_DIRPATH")
-CHAT_ID = getenv("BOT_CHAT_ID")
+CHAT_ID = int(getenv("BOT_CHAT_ID"))
+ALLOWED_USERS = list(map(int, getenv("ALLOWED_USERS").split(':')))
 
 logger.info("Env TOKEN=%s", TOKEN)
 logger.info("Env DIRPATH=%s", DIRPATH)
-logger.info("Env CHAT_ID=%s", CHAT_ID)
+logger.info("Env ALLOWED_USERS=%s", ALLOWED_USERS)
 
 settings = settings('.settings')
 scheduler = AsyncIOScheduler()
@@ -198,6 +200,9 @@ async def main() -> None:
         scheduler.resume_job(f"schedule_alert_{CHAT_ID}")
 
     scheduler.start()
+
+    # Разрешить доступ к боту только указанным пользователям
+    dp.update.outer_middleware(AccessMiddleware(users=ALLOWED_USERS))
 
     await dp.start_polling(bot)
 
