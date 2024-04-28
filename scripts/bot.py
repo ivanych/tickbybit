@@ -77,7 +77,7 @@ async def command_diff(message: Message) -> None:
                "`tpl1pc` — проценты Price и OpenInterestValue в ряд, всегда со знаком, круги\n"
                "`tpl1ps` — проценты Price и OpenInterestValue в ряд, всегда со знаком, квадраты\n"
                "`tpl2pc` — проценты Price и OpenInterestValue в колонку, всегда со знаком, круги\n"
-               "`tpl2ps` — проценты Price и OpenInterestValue в колонку, всегда со знаком, круги\n"
+               "`tpl2ps` — проценты Price и OpenInterestValue в колонку, всегда со знаком, квадраты\n"
                "\n"
                "*Уведомления*\n"
                "Получить уведомления — /alert\n"
