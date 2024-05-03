@@ -77,7 +77,7 @@ async def save(tickers: dict, time: int, dirpath: str) -> None:
     async with aiofiles.open(f'{dirpath}/{time}', mode='wb') as fd:
         await fd.write(tickers_pickle)
 
-    logger.info("Save new file %s", time)
+    logger.info("Сохранён файл %s", time)
 
 
 async def load(time: int, dirpath: str) -> dict:
