@@ -1,4 +1,8 @@
+import logging
+
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 async def get_market_tickers() -> dict:
@@ -16,9 +20,15 @@ async def get_market_tickers() -> dict:
 async def tickers() -> dict:
     bybit_tickers = await get_market_tickers()
 
+    time = int(bybit_tickers['time'])
+
+    tickbybit_tickers = {
+        ticker['symbol']: ticker for ticker in bybit_tickers['result']['list']
+    }
+
+    logger.info("Загружен и приведён к внутреннему формату новый прайс %s", time)
+
     return {
-        'time': int(bybit_tickers['time']),
-        'tickers': {
-            ticker['symbol']: ticker for ticker in bybit_tickers['result']['list']
-        }
+        'time': time,
+        'tickers': tickbybit_tickers
     }
