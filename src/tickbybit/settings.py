@@ -1,58 +1,99 @@
 from typing import Any
-import yaml
 import logging
-from jsonpath_ng import parse
+import yaml
 import re
 
-logger = logging.getLogger("tickbybit.settings")
+from jsonpath_ng import parse
 
+logger = logging.getLogger(__name__)
 
-def settings(dirpath: str) -> dict:
-    filepatch = f'{dirpath}/settings.yaml'
-
-    with open(filepatch) as fd:
-        result = yaml.safe_load(fd)
-
-        logger.info("Load settings file")
-
-        return result
-
-
-def _save(data: dict, dirpath: str):
-    filepatch = f'{dirpath}/settings.yaml'
-
-    with open(filepatch, mode='w') as fd:
-        yaml.safe_dump(data, fd)
-
-        logger.info("Save settings file")
-
-
-settings_default = {
+DEFAULT_SETTINGS = {
     "period": 300000,
     "interval": 60000,
     "format": "json",
-    "tickers": {
-        "SYMBOL": {
-            "markPrice": {
-                "alert_pcnt": 1
-            },
-            "openInterestValue": {
-                "alert_pcnt": 1
-            }
-        }
+    "ticker": {
+        "markPrice": {
+            "alert_pcnt": 1
+        },
+        "openInterestValue": {
+            "alert_pcnt": 1
+        },
     }
 }
 
 
-def set_key(dirpath: str, path: str, value: Any = None) -> dict:
+def _load(file: str) -> dict:
+    with open(file) as fd:
+        result = yaml.safe_load(fd)
+
+        logger.info("Load file")
+
+        return result
+
+
+def _save(data: dict, file: str) -> None:
+    with open(file, mode='w') as fd:
+        yaml.safe_dump(data, fd)
+
+        logger.info("Save file")
+
+
+def settings(file: str) -> dict:
+    return _load(file)
+
+
+def get_key(file: str, path: str) -> Any:
+    jsonpath = parse(path)
+
+    settings_old = _load(file)
+
+    matches = jsonpath.find(settings_old)
+
+    logger.info("Get key %s", path)
+
+    if matches:
+        return matches[0].value
+
+
+def set_key(file: str, path: str, value: Any = None) -> None:
+    jsonpath = parse(path)
+
+    settings_old = _load(file)
+
+    # TODO Тут есть косяк — если settings_old=None (т.е. если исходных данных ещё нет),
+    # то ключ не создаётся, возвращается None.
+    # Нужен костыль — файл с настройками нужно создавать не пустым, а хоть с какими-нибудь данными,
+    # например с пуcтым словарём {}.
+    # Надо что-то с этим придумать.
+    settings_new = jsonpath.update_or_create(settings_old, value)
+
+    _save(data=settings_new, file=file)
+
+    logger.info("Set key %s", path)
+
+
+def del_key(file: str, path: str) -> None:
+    jsonpath = parse(path)
+
+    settings_old = _load(file)
+
+    settings_new = jsonpath.filter(lambda d: True, settings_old)
+
+    _save(data=settings_new, file=file)
+
+    logger.info("Del key %s", path)
+
+
+def setup_key(data: dict, path: str, value: Any = None) -> dict:
     jsonpath = parse(path)
     jsonvalue = value
 
-    settings_old = settings(dirpath=dirpath)
-
     # Исключения и дефолты
     # tickers
-    if path == 'tickers':
+    if re.match('c\d', path):
+        pass
+
+    elif path == 'tickers':
         raise Exception(f'Нельзя устанавливать ключ tickers')
 
     elif re.match('is_auto$', path):
@@ -69,12 +110,12 @@ def set_key(dirpath: str, path: str, value: Any = None) -> dict:
     # tickers.[symbol]
     elif re.match('tickers\.\w+$', path):
         # нельзя устанавливать уже установленный ключ
-        matches = jsonpath.find(settings_old)
+        matches = jsonpath.find(data)
         if matches:
             raise Exception(f'Ключ {path} уже установлен')
 
         # дефолт
-        jsonvalue = settings_default['tickers']['SYMBOL']
+        jsonvalue = DEFAULT_SETTINGS['tickers']
 
     # ticker
     elif re.match('ticker$', path):
@@ -95,19 +136,15 @@ def set_key(dirpath: str, path: str, value: Any = None) -> dict:
     else:
         raise Exception(f'Установка ключа {path} пока не реализована')
 
-    settings_new = jsonpath.update_or_create(settings_old, jsonvalue)
+    settings_new = jsonpath.update_or_create(data, jsonvalue)
 
-    logger.info("Set settings key %s: %s", path, jsonvalue)
-
-    _save(data=settings_new, dirpath=dirpath)
+    logger.info("Setup key %s: %s", path, jsonvalue)
 
     return settings_new
 
 
-def del_key(dirpath: str, path: str) -> dict:
+def delete_key(data: dict, path: str) -> dict:
     jsonpath = parse(path)
-
-    settings_old = settings(dirpath=dirpath)
 
     # Исключения и дефолты
     # tickers
@@ -135,10 +172,8 @@ def del_key(dirpath: str, path: str) -> dict:
     else:
         raise Exception(f'Удаление ключа {path} пока не реализовано')
 
-    settings_new = jsonpath.filter(lambda d: True, settings_old)
+    settings_new = jsonpath.filter(lambda d: True, data)
 
-    logger.info("Del settings key %s", path)
-
-    _save(data=settings_new, dirpath=dirpath)
+    logger.info("Delete key %s", path)
 
     return settings_new

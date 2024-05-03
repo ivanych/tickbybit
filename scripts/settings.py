@@ -2,26 +2,41 @@
 
 import sys
 import logging
-import re
 
-from tickbybit import to_yaml
-from tickbybit.settings import set_key, del_key
+from tickbybit.settings import get_key, set_key, del_key
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 
-# Установить ключ
-comm = 'format: str1'
-args = re.split(r'\s*:\s*', comm.strip(), 1)
-path = args[0]
-value = (args[1:] + [None])[0]
+file = '.settings/settings.yaml'
 
-settings_new = set_key(dirpath='.settings', path=path, value=value)
-print(to_yaml(settings_new))
+print("--- key (str)---")
+path = 'test1.test1.str'
+setvalue = 'testvalue'
+set_key(file=file, path=path, value=setvalue)
+getvalue = get_key(file=file, path=path)
+assert getvalue == setvalue, f'get_key: getvalue = {getvalue}'
+del_key(file=file, path=path)
+getvalue = get_key(file=file, path=path)
+assert getvalue is None, f'get_key: getvalue = {getvalue}'
 
-# Удалить ключ
-comm = 'ticker.blablabla'
-args = re.split(r'\s*:\s*', comm.strip(), 1)
-path = args[0]
+print("--- key (None) ---")
+path = 'test2.test2.none'
+setvalue = None
+set_key(file=file, path=path, value=setvalue)
+getvalue = get_key(file=file, path=path)
+assert getvalue == setvalue, f'get_key: getvalue = {getvalue}'
+del_key(file=file, path=path)
+getvalue = get_key(file=file, path=path)
+assert getvalue is None, f'get_key: getvalue = {getvalue}'
 
-settings_new = del_key(dirpath='.settings', path=path)
-print(to_yaml(settings_new))
+print("--- key (dict) ---")
+path = 'test3.test3.dict'
+setvalue = {'k1': 'v1', 'k2': 'v2'}
+set_key(file=file, path=path, value=setvalue)
+getvalue = get_key(file=file, path=path)
+assert getvalue == setvalue, f'get_key: getvalue = {getvalue}'
+del_key(file=file, path=path)
+getvalue = get_key(file=file, path=path)
+assert getvalue is None, f'get_key: getvalue = {getvalue}'
+
+del_key(file=file, path='*')
