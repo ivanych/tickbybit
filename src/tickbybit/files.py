@@ -77,7 +77,7 @@ async def save(tickers: dict, time: int, dirpath: str) -> None:
     async with aiofiles.open(f'{dirpath}/{time}', mode='wb') as fd:
         await fd.write(tickers_pickle)
 
-    logger.info("Save new file %s", time)
+    logger.info("Сохранён файл %s", time)
 
 
 async def load(time: int, dirpath: str) -> dict:
@@ -91,20 +91,20 @@ async def load(time: int, dirpath: str) -> dict:
     return tickers
 
 
-def prune(period: int, interval: int, dirpath: str) -> list:
+def prune(dirpath: str, ttl: int) -> list:
     # Список имеющихся файлов
     files = _files(dirpath=dirpath)
 
     # Возраст старого файла
-    age = files[0] - period - interval
+    old = files[0] - ttl
 
     result = []
 
     for file in files:
-        if file < age:
+        if file < old:
             os.remove(f'{dirpath}/{file}')
             result.append(file)
 
-    logger.info("Prune old files %s", result)
+    logger.info("Очищены старые файлы %s (new=%s, old=%s, ttl=%s)", result, files[0], old, ttl)
 
     return result
