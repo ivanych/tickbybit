@@ -6,6 +6,8 @@ from aiogram.types import Message
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 from tickbybit.bot import to_yaml
 from tickbybit.states.settings import SettingsStatesGroup
 from tickbybit.settings import DEFAULT_SETTINGS, setup_key, delete_key
@@ -82,6 +84,40 @@ async def command_del(message: Message, command: CommandObject, state: FSMContex
         settings = delete_key(data['settings'], path=path)
         await state.update_data(settings=settings)
         text = 'Ключ удалён.\n\n/settings — посмотреть настройки.'
+    except Exception as e:
+        text = str(e)
+
+    await message.answer(text)
+
+
+@router.message(Command("on"), SettingsStatesGroup.registered)
+async def command_on(message: Message, state: FSMContext, scheduler: AsyncIOScheduler) -> None:
+    data = await state.get_data()
+
+    try:
+        settings = setup_key(data['settings'], path='is_auto', value='true')
+        await state.update_data(settings=settings)
+
+        scheduler.resume_job(f"send_alert_u{data['user']['id']}")
+
+        text = 'Автоматическая отправка уведомлений включена.\n\n/settings — посмотреть настройки.'
+    except Exception as e:
+        text = str(e)
+
+    await message.answer(text)
+
+
+@router.message(Command("off"), SettingsStatesGroup.registered)
+async def command_off(message: Message, state: FSMContext, scheduler: AsyncIOScheduler) -> None:
+    data = await state.get_data()
+
+    try:
+        settings = setup_key(data['settings'], path='is_auto', value='false')
+        await state.update_data(settings=settings)
+
+        scheduler.pause_job(f"send_alert_u{data['user']['id']}")
+
+        text = 'Автоматическая отправка уведомлений выключена.\n\n/settings — посмотреть настройки.'
     except Exception as e:
         text = str(e)
 
