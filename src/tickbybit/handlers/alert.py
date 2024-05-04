@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
-from tickbybit import format
+from tickbybit.bot import format
 from tickbybit.files import pair
 from tickbybit.states.settings import SettingsStatesGroup
 
