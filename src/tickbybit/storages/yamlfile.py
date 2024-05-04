@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class FileStorage(BaseStorage):
 
-    def __init__(self, file: str = '.settings/settings.yaml') -> None:
+    def __init__(self, file: str = '.storage.yaml') -> None:
         """
         :param file: путь к yaml-файлу с контекстными данными.
         """
