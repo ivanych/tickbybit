@@ -5,8 +5,9 @@ services:
     container_name: tickbybit
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
+      - SETTINGS_FILE=${SETTINGS_FILE}
       - BOT_DIRPATH=${BOT_DIRPATH}
-      - BOT_CHAT_ID=${BOT_CHAT_ID}
+      - PRICE_TTL=${PRICE_TTL}
       - ALLOWED_USERS=${ALLOWED_USERS}
     volumes:
       - settings:/app/.settings
