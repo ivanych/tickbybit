@@ -18,8 +18,16 @@ async def command_start(message: Message, state: FSMContext) -> None:
     # Зарегистрировать пользователя
     await state.set_state(SettingsStatesGroup.registered)
 
-    # Создать пользователю настройки по умолчанию
-    await state.update_data(settings=DEFAULT_SETTINGS)
+    # Данные пользователя
+    user = {
+        'id': message.from_user.id,
+    }
+
+    # Зарегистрировать пользователя с настройками по умолчанию
+    await state.update_data(
+        user=user,
+        settings=DEFAULT_SETTINGS,
+    )
 
     await message.answer(f"Здрасьте-мордасьте, {html.bold(message.from_user.full_name)}!")
 

@@ -11,6 +11,7 @@ DEFAULT_SETTINGS = {
     "period": 300000,
     "interval": 60000,
     "format": "json",
+    "is_auto": False,
     "ticker": {
         "markPrice": {
             "alert_pcnt": 1
