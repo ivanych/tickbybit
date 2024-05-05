@@ -1,3 +1,5 @@
+import re
+
 from pydantic import BaseModel, computed_field
 
 from .attrs_diff import AttrsDiff
@@ -17,3 +19,7 @@ class TickerDiff(BaseModel):
 
     def to_json(self) -> str:
         return self.model_dump_json(indent=2)
+
+    def is_suffix(self, suffix: str) -> bool:
+        suffix_re = re.sub(r'\s*,\s*', '|', suffix)
+        return True if re.fullmatch(f'.*({suffix_re})$', self.symbol) else False
