@@ -12,6 +12,7 @@ DEFAULT_SETTINGS = {
     "interval": 60000,
     "format": "json",
     "is_auto": False,
+    "filters": {},
     "ticker": {
         "markPrice": {
             "alert_pcnt": 1
@@ -118,6 +119,10 @@ def setup_key(data: dict, path: str, value: Any = None) -> dict:
         # дефолт
         jsonvalue = DEFAULT_SETTINGS['tickers']
 
+    # filters.suffix
+    elif re.match('filters\.suffix$', path):
+        pass
+
     # ticker
     elif re.match('ticker$', path):
         raise Exception(f'Нельзя устанавливать ключ ticker')
@@ -154,6 +159,10 @@ def delete_key(data: dict, path: str) -> dict:
 
     elif re.match('format$', path):
         raise Exception(f'Нельзя удалять ключ format')
+
+    # filters.suffix
+    elif re.match('filters\.suffix$', path):
+        pass
 
     # ticker
     elif re.match('ticker$', path):
