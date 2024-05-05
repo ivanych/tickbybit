@@ -24,9 +24,14 @@ async def command_alert(message: Message, state: FSMContext) -> None:
     # Изменения с уведомлениями
     diffs = tickers_diff.alert()
 
+    if settings['filters'].get('suffix'):
+        diffs = diffs.suffix(settings['filters'].get('suffix'))
+
+    diff_list = diffs.list()
+
     # Отправка уведомлений в телегу
-    if diffs:
-        for ticker_diff in diffs:
+    if diff_list:
+        for ticker_diff in diff_list:
             msg = format(ticker_diff, settings=settings)
             await message.answer(msg)
     else:
