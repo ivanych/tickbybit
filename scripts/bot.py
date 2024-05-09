@@ -18,6 +18,7 @@ from tickbybit.handlers import alert_router, error_router, help_router, settings
 from tickbybit.storages.yamlfile import FileStorage
 from tickbybit.schedule.tickers import download_new_tickers, prune_old_tickers
 from tickbybit.schedule.alert import send_alert
+from tickbybit.menu import set_command_menu
 from tickbybit.settings import settings
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
@@ -51,6 +52,9 @@ async def main() -> None:
 
     # Разрешить доступ к боту только указанным пользователям
     dp.update.outer_middleware(AccessMiddleware(users=ALLOWED_USERS))
+
+    # Установить в боте меню с командами
+    dp.startup.register(set_command_menu)
 
     #
     # Планировщик
