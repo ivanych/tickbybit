@@ -1,11 +1,11 @@
 from typing import Dict
 from pydantic import RootModel
 
-from .attr_diff import AttrDiff
+from .attr_diff import FloatAttrDiff, StrAttrDiff
 
 
 class AttrsDiff(RootModel):
-    root: Dict[str, AttrDiff]
+    root: Dict[str, FloatAttrDiff | StrAttrDiff]
 
     def __getitem__(self, item):
         return self.root[item]
@@ -16,8 +16,19 @@ class AttrsDiff(RootModel):
     def __getattr__(self, item):
         return self.root[item]
 
-    def is_alert(self) -> bool:
-        for attr in self.root:
-            if self.root[attr].is_alert:
-                return True
-        return False
+    def filter(self, filters: dict) -> bool:
+        """
+        Проверяет прохождение атрибутов через фильтры. Все атрибуты объединяются через "И".
+
+        Возвращает истину, если все атрибуты проходят через все свои фильтры
+
+        :param filters: Словарь с фильтрами для атрибутов.
+        :return:
+        """
+
+        return all(
+            map(
+                lambda key: self.root[key].filter(filters[key]),
+                filters
+            )
+        )

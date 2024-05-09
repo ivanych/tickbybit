@@ -25,11 +25,14 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
     # Изменения в отслеживаемых тикерах
     tickers_diff = tickers_pair.diff(settings)
 
-    # Изменения с уведомлениями
-    diffs = tickers_diff.alert()
+    # Уведомления
+    # TODO надо тут сделать, чтобы возвращался объект Alerts.
+    diffs = tickers_diff.filter(filters=settings['ticker'])
+
+    diff_list = diffs.list()
 
     # Отправка уведомлений в телегу
-    for ticker_diff in diffs:
+    for ticker_diff in diff_list:
         msg = format(td=ticker_diff, settings=settings)
 
         await bot.send_message(
@@ -37,4 +40,4 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
             text=msg,
         )
 
-    logger.info("Выполнена отправка уведомлений по расписанию; отправлено %s (user_id=%s)", len(diffs), user_id)
+    logger.info("Выполнена отправка уведомлений по расписанию; отправлено %s (user_id=%s)", len(diff_list), user_id)

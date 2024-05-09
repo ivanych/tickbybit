@@ -17,7 +17,7 @@ async def main():
     tickers_diff = tickers_pair.diff(settings_dict)
 
     # Вывод изменений
-    diffs = tickers_diff.all()
+    diffs = tickers_diff.list()
 
     if diffs:
         for ticker_diff in diffs:
