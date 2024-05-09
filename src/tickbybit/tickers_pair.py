@@ -5,7 +5,7 @@ from .ticker import Ticker
 from .tickers_diff import TickersDiff
 from .ticker_diff import TickerDiff
 from .attrs_diff import AttrsDiff
-from .attr_diff import AttrDiff
+from .attr_diff import FloatAttrDiff, StrAttrDiff
 
 
 class TickersPair(BaseModel):
@@ -47,17 +47,21 @@ class TickersPair(BaseModel):
 
         return tickers_diff
 
+    # TODO надо передалать этот метод, надо чтобы изменение атрибута создавалось сразу через класс AttrDiff
     def _attrs_diff(self, settings: dict, ticker_old: Ticker, ticker_new: Ticker) -> AttrsDiff:
         attrs_diff = {}
 
         # Цикл по атрибутам тикера
         for attr in settings['ticker']:
-            attr_diff = AttrDiff(
-                old=ticker_old[attr],
-                new=ticker_new[attr],
-                alert_pcnt=settings['ticker'][attr]['alert_pcnt'],
-            )
-
-            attrs_diff[attr] = attr_diff
+            if attr == 'symbol':
+                attrs_diff[attr] = StrAttrDiff(
+                    old=ticker_old[attr],
+                    new=ticker_new[attr],
+                )
+            else:
+                attrs_diff[attr] = FloatAttrDiff(
+                    old=ticker_old[attr],
+                    new=ticker_new[attr],
+                )
 
         return AttrsDiff(attrs_diff)

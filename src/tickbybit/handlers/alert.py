@@ -21,11 +21,9 @@ async def command_alert(message: Message, state: FSMContext) -> None:
     # Изменения в отслеживаемых тикерах
     tickers_diff = tickers_pair.diff(settings)
 
-    # Изменения с уведомлениями
-    diffs = tickers_diff.alert()
-
-    if settings['filters'].get('suffix'):
-        diffs = diffs.suffix(settings['filters'].get('suffix'))
+    # Уведомления
+    # TODO надо тут сделать, чтобы возвращался объект Alerts.
+    diffs = tickers_diff.filter(filters=settings['ticker'])
 
     diff_list = diffs.list()
 

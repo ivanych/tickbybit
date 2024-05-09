@@ -12,13 +12,15 @@ DEFAULT_SETTINGS = {
     "interval": 60000,
     "format": "json",
     "is_auto": False,
-    "filters": {},
     "ticker": {
+        "symbol": {
+            'suffix': "USDT"
+        },
         "markPrice": {
-            "alert_pcnt": 1
+            "absolute": 1
         },
         "openInterestValue": {
-            "alert_pcnt": 1
+            "absolute": 1
         },
     }
 }
@@ -91,53 +93,46 @@ def setup_key(data: dict, path: str, value: Any = None) -> dict:
     jsonvalue = value
 
     # Исключения и дефолты
-    # tickers
-    if re.match('c\d', path):
-        pass
 
-    elif path == 'tickers':
-        raise Exception(f'Нельзя устанавливать ключ tickers')
+    # Допустимые атрибуты
+    attrs = ['symbol', 'markPrice', 'openInterestValue']
+    attrs_re = f"({'|'.join(attrs)})"
 
+    # format
+    if re.match('format$', path):
+        vals = ['json', 'yaml', 'str1', 'str1p', 'str2', 'str2p', 'tpl1pa', 'tpl1pc', 'tpl1ps', 'tpl2pa', 'tpl2pc',
+                'tpl2ps']
+        val = '|'.join(vals)
+        assert re.match(f'({val})$', value), f'Допустимые значения: {vals}'
+
+    # is_auto
     elif re.match('is_auto$', path):
         vals = ['true', 'false']
         val = '|'.join(vals)
         assert re.match(f'({val})$', value), f'Допустимые значения: {vals}'
         jsonvalue = True if value == 'true' else False
 
-    elif re.match('format$', path):
-        vals = ['json', 'yaml', 'str1', 'str2', 'str3', 'str4', 'tpl1pa', 'tpl1pc', 'tpl1ps', 'tpl2pc', 'tpl2ps']
-        val = '|'.join(vals)
-        assert re.match(f'({val})$', value), f'Допустимые значения: {vals}'
-
-    # tickers.[symbol]
-    elif re.match('tickers\.\w+$', path):
-        # нельзя устанавливать уже установленный ключ
-        matches = jsonpath.find(data)
-        if matches:
-            raise Exception(f'Ключ {path} уже установлен')
-
-        # дефолт
-        jsonvalue = DEFAULT_SETTINGS['tickers']
-
-    # filters.suffix
-    elif re.match('filters\.suffix$', path):
-        pass
-
     # ticker
     elif re.match('ticker$', path):
         raise Exception(f'Нельзя устанавливать ключ ticker')
 
+    # ticker.[attr]
+    # пока не поддерживается
+
     # ticker.[attr].[key]
-    elif re.match('ticker\.\w+\.\w+$', path):
-        if re.match('ticker\.\w+\.alert_pcnt$', path):
+    elif re.match(f"ticker\.{attrs_re}\.\w+$", path):
+        if re.match('ticker\.\w+\.absolute$', path):
             if value is None:
                 jsonvalue = 1
             else:
                 # TODO тут надо бы перехватить исключение и вывести более читабельное сообщение
                 jsonvalue = float(value)
+        elif re.match('ticker\.\w+\.suffix$', path):
+            if value is None:
+                raise Exception(f'Нужно указать значение')
         else:
             # TODO тут надо бы часть [attr] показывать именно как плейсхолдер [attr], а не как буквальное значение
-            raise Exception(f'Ключ {path} не поддерживается')
+            raise Exception(f'Ключ <code>{path}</code> не поддерживается')
 
     else:
         raise Exception(f'Установка ключа {path} пока не реализована')
@@ -153,16 +148,14 @@ def delete_key(data: dict, path: str) -> dict:
     jsonpath = parse(path)
 
     # Исключения и дефолты
-    # tickers
-    if path == 'tickers':
-        raise Exception(f'Нельзя удалять ключ tickers')
 
-    elif re.match('format$', path):
+    # format
+    if re.match('format$', path):
         raise Exception(f'Нельзя удалять ключ format')
 
-    # filters.suffix
-    elif re.match('filters\.suffix$', path):
-        pass
+    # is_auto
+    if re.match('is_auto$', path):
+        raise Exception(f'Нельзя удалять ключ is_auto')
 
     # ticker
     elif re.match('ticker$', path):
@@ -170,14 +163,11 @@ def delete_key(data: dict, path: str) -> dict:
 
     # ticker.[attr]
     elif re.match('ticker\.\w+$', path):
-        # ticker.markPrice - нельзя удалять, хотя бы один атрибут нужно оставить на всякий случай
-        if re.match('ticker\.markPrice$', path):
-            raise Exception(f'Нельзя удалять ключ ticker.markPrice')
         pass
 
     # ticker.[attr].[key]
     elif re.match('ticker\.\w+\.\w+$', path):
-        raise Exception(f'Нельзя удалять ключ ticker.[attr].[key]')
+        pass
 
     else:
         raise Exception(f'Удаление ключа {path} пока не реализовано')

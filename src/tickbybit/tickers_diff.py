@@ -17,8 +17,17 @@ class TickersDiff(RootModel):
     def list(self) -> list[TickerDiff]:
         return self.root
 
-    def alert(self) -> SelfTickersDiff:
-        return TickersDiff(list(filter(lambda x: x.is_alert, self.root)))
+    def filter(self, filters: dict) -> SelfTickersDiff:
+        # TODO Не уверен, что это хорошее решение.
+        #
+        # Копия нужна из-за того, что данные о применённых и сработавших фильтрах (в частности, флаг is_alert)
+        # вставляются в методах filter (в основном в attr_diff) прямо в фильтруемый объект.
+        # А это создаёт проблему при использовании объекта больше, чем с одним триггером —
+        # в следующих прогонах будет мусор от предыдущих.
+        #
+        # Но при копировании создаётся полная копия объекта, хотя полная копия на самом деле не нужна.
+        # Более эффективным кажется отфильтровывать только нужные тикеры и уже отфильтрованные модифицировать.
+        # Но сходу не знаю как это сделать.
+        self_copy = self.copy(deep=True)
 
-    def suffix(self, suffix: str) -> SelfTickersDiff:
-        return TickersDiff(list(filter(lambda x: x.is_suffix(suffix), self.root)))
+        return TickersDiff(list(filter(lambda x: x.filter(filters), self_copy.root)))
