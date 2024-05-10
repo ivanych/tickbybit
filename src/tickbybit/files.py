@@ -1,4 +1,6 @@
 import os
+from os import getenv
+
 import aiofiles
 import aiofiles.os
 import logging
@@ -6,6 +8,8 @@ import pickle
 
 from .tickers_pair import TickersPair
 from .tickers import Tickers
+
+DOWNLOAD_PERIOD = int(getenv('DOWNLOAD_PERIOD'))
 
 logger = logging.getLogger("tickbybit.files")
 
@@ -26,7 +30,7 @@ async def pair(settings: dict, dirpath: str) -> TickersPair:
     logger.info("Identified new file %s", new_file)
 
     # Старый файл — первый файл в списке, который старше самого первого файла не более, period (каламбур, да...)
-    old_file = _old(files, period=settings['period'], interval=settings['interval'])
+    old_file = _old(files, period=settings['period'], download_period=DOWNLOAD_PERIOD)
     logger.info("Identified old file %s", old_file)
 
     # Прочитать файлы
@@ -45,19 +49,19 @@ def _files(dirpath: str) -> list[int]:
     return sorted(map(int, files), reverse=True)
 
 
-def _old(files: list[int], period: int, interval: int) -> int:
+def _old(files: list[int], period: int, download_period: int) -> int:
     """
     Определить старый файл.
 
-    Это файл, который как можно старше первого файла, но не старше, чем на period+interval.
+    Это файл, который как можно старше первого файла, но не старше, чем на period + download_period.
 
     :param files: Список названий файлов.
     :param period: Период сравнения (миллисекунды).
-    :param interval: Интервал обновления (миллисекунды).
+    :param download_period: период загрузки новых прайсов, в секундах.
     :return: Название старого файла.
     """
     # Возраст старого файла
-    age = files[0] - period - interval
+    age = files[0] - period - download_period
 
     result = None
 

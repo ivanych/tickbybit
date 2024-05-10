@@ -9,6 +9,9 @@ services:
       - BOT_DIRPATH=${BOT_DIRPATH}
       - PRICE_TTL=${PRICE_TTL}
       - ALLOWED_USERS=${ALLOWED_USERS}
+      - DOWNLOAD_PERIOD=${DOWNLOAD_PERIOD}
+      - PRUNE_PERIOD=${PRUNE_PERIOD}
+      - ALERT_PERIOD=${ALERT_PERIOD}
     volumes:
       - settings:/app/.settings
     restart: unless-stopped

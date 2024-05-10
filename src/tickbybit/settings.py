@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_SETTINGS = {
     "period": 300000,
-    "interval": 60000,
     "format": "json",
     "is_auto": False,
     "ticker": {
