@@ -30,12 +30,18 @@ SETTINGS_FILE = getenv("SETTINGS_FILE")
 DIRPATH = getenv("BOT_DIRPATH")
 PRICE_TTL = int(getenv("PRICE_TTL"))
 ALLOWED_USERS = list(map(int, getenv("ALLOWED_USERS").split(':')))
+DOWNLOAD_PERIOD = int(getenv("DOWNLOAD_PERIOD"))
+PRUNE_PERIOD = int(getenv("PRUNE_PERIOD"))
+ALERT_PERIOD = int(getenv("ALERT_PERIOD"))
 
 logger.info("Env TOKEN=%s", TOKEN)
 logger.info("Env SETTINGS_FILE=%s", SETTINGS_FILE)
 logger.info("Env DIRPATH=%s", DIRPATH)
 logger.info("Env PRICE_TTL=%s", PRICE_TTL)
 logger.info("Env ALLOWED_USERS=%s", ALLOWED_USERS)
+logger.info("Env DOWNLOAD_PERIOD=%s", DOWNLOAD_PERIOD)
+logger.info("Env PRUNE_PERIOD=%s", PRUNE_PERIOD)
+logger.info("Env ALERT_PERIOD=%s", ALERT_PERIOD)
 
 storage = FileStorage(file=SETTINGS_FILE)
 dp = Dispatcher(storage=storage, fsm_strategy=FSMStrategy.GLOBAL_USER)
@@ -67,7 +73,7 @@ async def main() -> None:
         trigger='interval',
         kwargs={'dirpath': DIRPATH},
         id=f"download_new_tickers",
-        seconds=60,
+        seconds=DOWNLOAD_PERIOD,
     )
 
     # Очистка старых прайсов
@@ -76,7 +82,7 @@ async def main() -> None:
         trigger='interval',
         kwargs={'dirpath': DIRPATH, 'ttl': PRICE_TTL},
         id=f"prune_old_tickers",
-        seconds=60,
+        seconds=PRUNE_PERIOD,
     )
 
     # Автоматическая отправка уведомлений
@@ -101,7 +107,7 @@ async def main() -> None:
                 kwargs={'dp': dp, 'bot': bot, 'user_id': user_id, 'tickers_dir': DIRPATH},
                 id=f"send_alert_u{user_id}",
                 next_run_time=next_run_time,
-                seconds=60,
+                seconds=ALERT_PERIOD,
             )
 
     scheduler.start()
