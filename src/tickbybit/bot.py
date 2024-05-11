@@ -49,6 +49,9 @@ def to_str2(data: dict, p: bool = False) -> str:
 def to_tpl1(data: dict, p: bool = False, i: str = 'arrow') -> str:
     symbol = html.bold(data['symbol'])
 
+    # Иконка триггера
+    trigger_icon = _trigger_icon(data['trigger_icon'])
+
     indicator = globals()[f'_indicator_{i}']
 
     price_indicator = indicator(
@@ -63,12 +66,15 @@ def to_tpl1(data: dict, p: bool = False, i: str = 'arrow') -> str:
     )
     oi_pcnt = _plus(data['attrs']['openInterestValue']['pcnt'])
 
-    return (f"{data['interval']} сек | {symbol}\n\n"
+    return (f"{trigger_icon}{data['interval']} сек | {symbol}\n\n"
             f"{price_indicator} Price  {price_pcnt}%    {oi_indicator} OI  {oi_pcnt}%")
 
 
 def to_tpl2(data: dict, p: bool = False, i: str = 'circle') -> str:
     symbol = html.bold(data['symbol'])
+
+    # Иконка триггера
+    trigger_icon = _trigger_icon(data['trigger_icon'])
 
     indicator = globals()[f'_indicator_{i}']
 
@@ -84,13 +90,20 @@ def to_tpl2(data: dict, p: bool = False, i: str = 'circle') -> str:
     )
     oi_pcnt = _plus(data['attrs']['openInterestValue']['pcnt'])
 
-    return (f"{data['interval']} сек | {symbol}\n\n"
+    return (f"{trigger_icon}{data['interval']} сек | {symbol}\n\n"
             f"{price_indicator} <code>Price {price_pcnt}%</code>\n"
             f"{oi_indicator} <code>OI    {oi_pcnt}%</code>")
 
 
 def _plus(value: int | float) -> str:
     return f"{'+' if value > 0 else ''}{value}"
+
+
+def _trigger_icon(icon) -> str:
+    if icon:
+        return icon + ' '
+    else:
+        return ''
 
 
 def _indicator_circle(got: int | float, expected: int | float = 0) -> str:
