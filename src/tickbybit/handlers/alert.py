@@ -45,7 +45,7 @@ async def command_alert(message: Message, state: FSMContext) -> None:
 
         # Уведомления по тикерам
         # TODO надо тут сделать, чтобы возвращался объект Alerts.
-        alerts = ticker_diffs.filter(filters=trigger['ticker'])
+        alerts = ticker_diffs.filter(trigger=trigger)
 
         alerts_list.extend(alerts.list())
 

@@ -16,19 +16,19 @@ class AttrsDiff(RootModel):
     def __getattr__(self, item):
         return self.root[item]
 
-    def filter(self, filters: dict) -> bool:
+    def filter(self, trigger: dict) -> bool:
         """
         Проверяет прохождение атрибутов через фильтры. Все атрибуты объединяются через "И".
 
         Возвращает истину, если все атрибуты проходят через все свои фильтры
 
-        :param filters: Словарь с фильтрами для атрибутов.
+        :param trigger: триггер.
         :return:
         """
 
         return all(
             map(
-                lambda key: self.root[key].filter(filters[key]),
-                filters
+                lambda attr: self.root[attr].filter(trigger['ticker'][attr]),
+                trigger['ticker']
             )
         )
