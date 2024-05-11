@@ -17,7 +17,7 @@ class TickersDiff(RootModel):
     def list(self) -> list[TickerDiff]:
         return self.root
 
-    def filter(self, filters: dict) -> SelfTickersDiff:
+    def filter(self, trigger: dict) -> SelfTickersDiff:
         # TODO Не уверен, что это хорошее решение.
         #
         # Копия нужна из-за того, что данные о применённых и сработавших фильтрах (в частности, флаг is_alert)
@@ -30,4 +30,4 @@ class TickersDiff(RootModel):
         # Но сходу не знаю как это сделать.
         self_copy = self.copy(deep=True)
 
-        return TickersDiff(list(filter(lambda x: x.filter(filters), self_copy.root)))
+        return TickersDiff(list(filter(lambda x: x.filter(trigger), self_copy.root)))

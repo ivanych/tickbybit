@@ -46,7 +46,7 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
 
         # Уведомления по тикерам
         # TODO надо тут сделать, чтобы возвращался объект Alerts.
-        alerts = ticker_diffs.filter(filters=trigger['ticker'])
+        alerts = ticker_diffs.filter(trigger=trigger)
 
         alerts_list.extend(alerts.list())
 

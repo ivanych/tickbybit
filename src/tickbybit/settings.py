@@ -40,7 +40,7 @@ def _load(file: str) -> dict:
 
 def _save(data: dict, file: str) -> None:
     with open(file, mode='w') as fd:
-        yaml.safe_dump(data, fd)
+        yaml.safe_dump(data, fd, allow_unicode=True)
 
         logger.info("Save file")
 
@@ -123,6 +123,10 @@ def setup_key(data: dict, path: str, value: Any = None) -> dict:
     elif re.match('triggers\.?\[\d+\]$', path):
         raise Exception(f'Нельзя устанавливать ключ triggers[*]')
 
+    # triggers[*].icon
+    elif re.match('triggers\.?\[\d+\]\.icon$', path):
+        assert len(value)>0, 'Нужно указать значение'
+
     # triggers[*].interval
     elif re.match('triggers\.?\[\d+\]\.interval$', path):
         # TODO тут надо бы перехватить исключение и вывести более читабельное сообщение
@@ -178,6 +182,10 @@ def delete_key(data: dict, path: str) -> dict:
 
     # triggers[*]
     # пока не поддерживается
+
+    # triggers[*].icon
+    elif re.match('triggers\.?\[\d+\]\.icon$', path):
+        pass
 
     # triggers[*].interval
     elif re.match('triggers\.?\[\d+\]\.interval$', path):
