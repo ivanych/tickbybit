@@ -32,7 +32,7 @@ def to_str1(data: dict, p: bool = False) -> str:
     if p:
         price_pcnt = _plus(price_pcnt)
 
-    return f"{data['symbol']} {price_pcnt}%"
+    return f"{data['interval']} сек | {data['symbol']} {price_pcnt}%"
 
 
 def to_str2(data: dict, p: bool = False) -> str:
@@ -43,7 +43,7 @@ def to_str2(data: dict, p: bool = False) -> str:
         price_pcnt = _plus(price_pcnt)
         oi_pcnt = _plus(oi_pcnt)
 
-    return f"{data['symbol']} markPrice: {price_pcnt}%, openInterestValue: {oi_pcnt}%"
+    return f"{data['interval']} сек | {data['symbol']} markPrice: {price_pcnt}%, openInterestValue: {oi_pcnt}%"
 
 
 def to_tpl1(data: dict, p: bool = False, i: str = 'arrow') -> str:
@@ -63,7 +63,7 @@ def to_tpl1(data: dict, p: bool = False, i: str = 'arrow') -> str:
     )
     oi_pcnt = _plus(data['attrs']['openInterestValue']['pcnt'])
 
-    return (f"{symbol}\n\n"
+    return (f"{data['interval']} сек | {symbol}\n\n"
             f"{price_indicator} Price  {price_pcnt}%    {oi_indicator} OI  {oi_pcnt}%")
 
 
@@ -84,7 +84,7 @@ def to_tpl2(data: dict, p: bool = False, i: str = 'circle') -> str:
     )
     oi_pcnt = _plus(data['attrs']['openInterestValue']['pcnt'])
 
-    return (f"{symbol}\n\n"
+    return (f"{data['interval']} сек | {symbol}\n\n"
             f"{price_indicator} <code>Price {price_pcnt}%</code>\n"
             f"{oi_indicator} <code>OI    {oi_pcnt}%</code>")
 
