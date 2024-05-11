@@ -36,7 +36,7 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
         # Пара прайсов (пытаемся взять из кеша)
         tickers_pair = tickers_pair_cache.get(interval)
         if tickers_pair is None:
-            tickers_pair_cache[interval] = await pair(interval, dirpath=tickers_dir)
+            tickers_pair_cache[interval] = await pair(interval, tickers_dir=tickers_dir)
             tickers_pair = tickers_pair_cache[interval]
         else:
             logger.info('Пара прайсов для интервала interval=%s получена из кеша', interval)

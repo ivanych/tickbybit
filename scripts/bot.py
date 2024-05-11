@@ -27,7 +27,7 @@ logger = logging.getLogger("tickbybit")
 
 TOKEN = getenv("BOT_TOKEN")
 SETTINGS_FILE = getenv("SETTINGS_FILE")
-DIRPATH = getenv("BOT_DIRPATH")
+TICKERS_DIR = getenv("TICKERS_DIR")
 PRICE_TTL = int(getenv("PRICE_TTL"))
 ALLOWED_USERS = list(map(int, getenv("ALLOWED_USERS").split(':')))
 DOWNLOAD_PERIOD = int(getenv("DOWNLOAD_PERIOD"))
@@ -36,7 +36,7 @@ ALERT_PERIOD = int(getenv("ALERT_PERIOD"))
 
 logger.info("Env TOKEN=%s", TOKEN)
 logger.info("Env SETTINGS_FILE=%s", SETTINGS_FILE)
-logger.info("Env DIRPATH=%s", DIRPATH)
+logger.info("Env TICKERS_DIR=%s", TICKERS_DIR)
 logger.info("Env PRICE_TTL=%s", PRICE_TTL)
 logger.info("Env ALLOWED_USERS=%s", ALLOWED_USERS)
 logger.info("Env DOWNLOAD_PERIOD=%s", DOWNLOAD_PERIOD)
@@ -71,7 +71,7 @@ async def main() -> None:
     scheduler.add_job(
         func=download_new_tickers,
         trigger='interval',
-        kwargs={'dirpath': DIRPATH},
+        kwargs={'tickers_dir': TICKERS_DIR},
         id=f"download_new_tickers",
         seconds=DOWNLOAD_PERIOD,
     )
@@ -80,7 +80,7 @@ async def main() -> None:
     scheduler.add_job(
         func=prune_old_tickers,
         trigger='interval',
-        kwargs={'dirpath': DIRPATH, 'ttl': PRICE_TTL},
+        kwargs={'tickers_dir': TICKERS_DIR, 'ttl': PRICE_TTL},
         id=f"prune_old_tickers",
         seconds=PRUNE_PERIOD,
     )
@@ -104,7 +104,7 @@ async def main() -> None:
             scheduler.add_job(
                 func=send_alert,
                 trigger='interval',
-                kwargs={'dp': dp, 'bot': bot, 'user_id': user_id, 'tickers_dir': DIRPATH},
+                kwargs={'dp': dp, 'bot': bot, 'user_id': user_id, 'tickers_dir': TICKERS_DIR},
                 id=f"send_alert_u{user_id}",
                 next_run_time=next_run_time,
                 seconds=ALERT_PERIOD,
@@ -113,7 +113,7 @@ async def main() -> None:
     scheduler.start()
 
     # Понеслась!
-    await dp.start_polling(bot, scheduler=scheduler)
+    await dp.start_polling(bot, scheduler=scheduler, tickers_dir=TICKERS_DIR)
 
 
 if __name__ == "__main__":

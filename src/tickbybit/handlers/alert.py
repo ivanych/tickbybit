@@ -14,7 +14,7 @@ router = Router()
 
 
 @router.message(Command("alert"), SettingsStatesGroup.registered)
-async def command_alert(message: Message, state: FSMContext) -> None:
+async def command_alert(message: Message, state: FSMContext, tickers_dir: str) -> None:
     data = await state.get_data()
     settings = data['settings']
 
@@ -35,7 +35,7 @@ async def command_alert(message: Message, state: FSMContext) -> None:
         # Пара прайсов (пытаемся взять из кеша)
         tickers_pair = tickers_pair_cache.get(interval)
         if tickers_pair is None:
-            tickers_pair_cache[interval] = await pair(interval, dirpath='.tickers')
+            tickers_pair_cache[interval] = await pair(interval, tickers_dir=tickers_dir)
             tickers_pair = tickers_pair_cache[interval]
         else:
             logger.info('Пара прайсов для интервала interval=%s получена из кеша', interval)
