@@ -8,20 +8,24 @@ from jsonpath_ng import parse
 logger = logging.getLogger(__name__)
 
 DEFAULT_SETTINGS = {
-    "period": 300000,
     "format": "json",
     "is_auto": False,
-    "ticker": {
-        "symbol": {
-            'suffix': "USDT"
-        },
-        "markPrice": {
-            "absolute": 1
-        },
-        "openInterestValue": {
-            "absolute": 1
-        },
-    }
+    "triggers": [
+        {
+            "interval": 60,
+            "ticker": {
+                "symbol": {
+                    'suffix': "USDT"
+                },
+                "markPrice": {
+                    "absolute": 1
+                },
+                "openInterestValue": {
+                    "absolute": 1
+                },
+            }
+        }
+    ]
 }
 
 
@@ -93,7 +97,7 @@ def setup_key(data: dict, path: str, value: Any = None) -> dict:
 
     # Исключения и дефолты
 
-    # Допустимые атрибуты
+    # Используемые атрибуты тикера
     attrs = ['symbol', 'markPrice', 'openInterestValue']
     attrs_re = f"({'|'.join(attrs)})"
 
@@ -111,22 +115,34 @@ def setup_key(data: dict, path: str, value: Any = None) -> dict:
         assert re.match(f'({val})$', value), f'Допустимые значения: {vals}'
         jsonvalue = True if value == 'true' else False
 
-    # ticker
-    elif re.match('ticker$', path):
-        raise Exception(f'Нельзя устанавливать ключ ticker')
+    # triggers
+    elif re.match('triggers$', path):
+        raise Exception(f'Нельзя устанавливать ключ triggers')
 
-    # ticker.[attr]
+    # triggers[*]
+    elif re.match('triggers\.?\[\d+\]$', path):
+        raise Exception(f'Нельзя устанавливать ключ triggers[*]')
+
+    # triggers[*].interval
+    elif re.match('triggers\.?\[\d+\]\.interval$', path):
+        # TODO тут надо бы перехватить исключение и вывести более читабельное сообщение
+        jsonvalue = int(value)
+
+    # triggers[*].ticker
     # пока не поддерживается
 
-    # ticker.[attr].[key]
-    elif re.match(f"ticker\.{attrs_re}\.\w+$", path):
-        if re.match('ticker\.\w+\.absolute$', path):
+    # triggers[*].ticker.[attr]
+    # пока не поддерживается
+
+    # triggers[*].ticker.[attr].[key]
+    elif re.match(f"triggers\.?\[\d+\]\.ticker\.{attrs_re}\.\w+$", path):
+        if re.match('.+absolute$', path):
             if value is None:
                 jsonvalue = 1
             else:
                 # TODO тут надо бы перехватить исключение и вывести более читабельное сообщение
                 jsonvalue = float(value)
-        elif re.match('ticker\.\w+\.suffix$', path):
+        elif re.match('.+suffix$', path):
             if value is None:
                 raise Exception(f'Нужно указать значение')
         else:
@@ -156,16 +172,27 @@ def delete_key(data: dict, path: str) -> dict:
     if re.match('is_auto$', path):
         raise Exception(f'Нельзя удалять ключ is_auto')
 
-    # ticker
-    elif re.match('ticker$', path):
-        raise Exception(f'Нельзя удалять ключ ticker')
+    # triggers
+    elif re.match('triggers$', path):
+        raise Exception(f'Нельзя удалять ключ triggers')
 
-    # ticker.[attr]
-    elif re.match('ticker\.\w+$', path):
+    # triggers[*]
+    # пока не поддерживается
+
+    # triggers[*].interval
+    elif re.match('triggers\.?\[\d+\]\.interval$', path):
+        raise Exception(f'Нельзя удалять ключ triggers[*].interval')
+
+    # triggers[*].ticker
+    elif re.match('triggers\.?\[\d+\]\.ticker$', path):
+        raise Exception(f'Нельзя удалять ключ triggers[*].ticker')
+
+    # triggers[*].ticker.[attr]
+    elif re.match('triggers\.?\[\d+\]\.ticker\.\w+$', path):
         pass
 
-    # ticker.[attr].[key]
-    elif re.match('ticker\.\w+\.\w+$', path):
+    # triggers[*].ticker.[attr].[key]
+    elif re.match('triggers\.?\[\d+\]\.ticker\.\w+\.\w+$', path):
         pass
 
     else:
