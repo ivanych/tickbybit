@@ -113,7 +113,7 @@ async def main() -> None:
     scheduler.start()
 
     # Понеслась!
-    await dp.start_polling(bot, scheduler=scheduler)
+    await dp.start_polling(bot, scheduler=scheduler, tickers_dir=TICKERS_DIR)
 
 
 if __name__ == "__main__":
