@@ -55,7 +55,7 @@ class FloatAttrDiff(AttrDiff):
         """
         self.filters[key] = {'value': value, 'is_alert': False}
 
-        if self.pcnt >= value:
+        if abs(self.pcnt) >= value:
             self.filters[key]['is_alert'] = True
             return True
         else:
