@@ -6,7 +6,7 @@ services:
     environment:
       - BOT_TOKEN=${BOT_TOKEN}
       - SETTINGS_FILE=${SETTINGS_FILE}
-      - BOT_DIRPATH=${BOT_DIRPATH}
+      - TICKERS_DIR=${TICKERS_DIR}
       - PRICE_TTL=${PRICE_TTL}
       - ALLOWED_USERS=${ALLOWED_USERS}
       - DOWNLOAD_PERIOD=${DOWNLOAD_PERIOD}
@@ -14,7 +14,9 @@ services:
       - ALERT_PERIOD=${ALERT_PERIOD}
     volumes:
       - settings:/app/.settings
+      - tickers:/app/.tickers
     restart: unless-stopped
 
 volumes:
   settings:
+  tickers:
