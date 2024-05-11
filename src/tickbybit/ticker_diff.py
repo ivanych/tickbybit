@@ -10,7 +10,7 @@ class TickerDiff(BaseModel):
     time_new: int
     time_old: int
     interval: int  # интервал сравнения, в секундах
-    trigger_icon: Optional[str] = None  # иконка триггера
+    icon: Optional[str] = None  # иконка триггера
     attrs: AttrsDiff
 
     def to_json(self) -> str:
@@ -20,6 +20,6 @@ class TickerDiff(BaseModel):
         is_alert = self.attrs.filter(trigger)
 
         if is_alert:
-            self.trigger_icon = trigger.get('icon')
+            self.icon = trigger.get('icon')
 
         return is_alert
