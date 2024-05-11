@@ -19,25 +19,45 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
     data = await state.get_data()
     settings = data['settings']
 
-    # Пара сравниваемых прайсов
-    tickers_pair = await pair(settings, dirpath=tickers_dir)
+    # TODO надо бы перенести кеш в метод files.pair, но там инвалидацию надо продумывать,
+    # а тут инвалидируется само при выходе из метода.
+    tickers_pair_cache = {}
 
-    # Изменения в отслеживаемых тикерах
-    tickers_diff = tickers_pair.diff(settings)
+    alerts_list = []
 
-    # Уведомления
-    # TODO надо тут сделать, чтобы возвращался объект Alerts.
-    diffs = tickers_diff.filter(filters=settings['ticker'])
+    # Отсортировать триггеры по интервалу
+    triggers = sorted(settings['triggers'], key=lambda x: x['interval'], reverse=True)
 
-    diff_list = diffs.list()
+    # Цикл по триггерам
+    for trigger in triggers:
+        interval = trigger['interval']
+        logger.info('Обработка триггера (interval=%s)...', interval)
+
+        # Пара прайсов (пытаемся взять из кеша)
+        tickers_pair = tickers_pair_cache.get(interval)
+        if tickers_pair is None:
+            tickers_pair_cache[interval] = await pair(interval, dirpath=tickers_dir)
+            tickers_pair = tickers_pair_cache[interval]
+        else:
+            logger.info('Пара прайсов для интервала interval=%s получена из кеша', interval)
+
+        # Изменения тикеров
+        ticker_diffs = tickers_pair.diff()
+
+        # Уведомления по тикерам
+        # TODO надо тут сделать, чтобы возвращался объект Alerts.
+        alerts = ticker_diffs.filter(filters=trigger['ticker'])
+
+        alerts_list.extend(alerts.list())
 
     # Отправка уведомлений в телегу
-    for ticker_diff in diff_list:
-        msg = format(td=ticker_diff, settings=settings)
+    for alert in alerts_list:
+        msg = format(td=alert, settings=settings)
 
         await bot.send_message(
             chat_id=chat_id,
             text=msg,
         )
 
-    logger.info("Выполнена отправка уведомлений по расписанию; отправлено %s (user_id=%s)", len(diff_list), user_id)
+    logger.info("Выполнена отправка уведомлений по расписанию; отправлено %s уведомлений (user_id=%s)",
+                len(alerts_list), user_id)
