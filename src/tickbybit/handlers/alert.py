@@ -1,3 +1,4 @@
+from os import getenv
 import logging
 
 from aiogram import Router
@@ -9,6 +10,7 @@ from tickbybit.bot import format
 from tickbybit.files import pair
 from tickbybit.states.settings import SettingsStatesGroup
 
+TICKERS_DIR = getenv("TICKERS_DIR")
 logger = logging.getLogger(__name__)
 router = Router()
 
@@ -35,7 +37,7 @@ async def command_alert(message: Message, state: FSMContext) -> None:
         # Пара прайсов (пытаемся взять из кеша)
         tickers_pair = tickers_pair_cache.get(interval)
         if tickers_pair is None:
-            tickers_pair_cache[interval] = await pair(interval, dirpath='.tickers')
+            tickers_pair_cache[interval] = await pair(interval, tickers_dir=TICKERS_DIR)
             tickers_pair = tickers_pair_cache[interval]
         else:
             logger.info('Пара прайсов для интервала interval=%s получена из кеша', interval)

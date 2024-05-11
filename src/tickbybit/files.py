@@ -14,27 +14,27 @@ DOWNLOAD_PERIOD = int(getenv('DOWNLOAD_PERIOD'))
 logger = logging.getLogger(__name__)
 
 
-async def pair(interval: int, dirpath: str) -> TickersPair:
+async def pair(interval: int, tickers_dir: str) -> TickersPair:
     """
     Получить пару сравниваемых прайсов из файлового хранилища.
 
     :param interval: интервал сравнения, в секундах
-    :param dirpath: Путь к каталогу с файлами.
+    :param tickers_dir: путь к каталогу с файлами прайсов.
     :return: Старый и новый прайсы.
     """
     # Список имеющихся файлов
-    files = _files(dirpath=dirpath)
+    files = _files(tickers_dir=tickers_dir)
 
     # Новый файл
     new_file = files[0]
     logger.info("Определён новый файл (new_file=%s)", new_file)
-    new = await load(time=new_file, dirpath=dirpath)
+    new = await load(time=new_file, tickers_dir=tickers_dir)
 
     # Старый файл — первый файл в списке, который старше самого первого файла не более,
     # чем на interval + download_period
     old_file = _old(files, interval=interval, download_period=DOWNLOAD_PERIOD)
     logger.info("Определён старый файл (old_file=%s)", old_file)
-    old = await load(time=old_file, dirpath=dirpath)
+    old = await load(time=old_file, tickers_dir=tickers_dir)
 
     return TickersPair(
         interval=interval,
@@ -43,8 +43,8 @@ async def pair(interval: int, dirpath: str) -> TickersPair:
     )
 
 
-def _files(dirpath: str) -> list[int]:
-    files = os.listdir(dirpath)
+def _files(tickers_dir: str) -> list[int]:
+    files = os.listdir(tickers_dir)
 
     return sorted(map(int, files), reverse=True)
 
@@ -75,17 +75,17 @@ def _old(files: list[int], interval: int, download_period: int) -> int:
     return result
 
 
-async def save(tickers: dict, time: int, dirpath: str) -> None:
+async def save(tickers: dict, time: int, tickers_dir: str) -> None:
     tickers_pickle = pickle.dumps(tickers)
 
-    async with aiofiles.open(f'{dirpath}/{time}', mode='wb') as fd:
+    async with aiofiles.open(f'{tickers_dir}/{time}', mode='wb') as fd:
         await fd.write(tickers_pickle)
 
     logger.info("Сохранён файл %s", time)
 
 
-async def load(time: int, dirpath: str) -> dict:
-    async with aiofiles.open(f'{dirpath}/{time}', mode='rb') as fd:
+async def load(time: int, tickers_dir: str) -> dict:
+    async with aiofiles.open(f'{tickers_dir}/{time}', mode='rb') as fd:
         tickers_pickle = await fd.read()
 
     tickers = pickle.loads(tickers_pickle)
@@ -95,9 +95,9 @@ async def load(time: int, dirpath: str) -> dict:
     return tickers
 
 
-def prune(dirpath: str, ttl: int) -> list:
+def prune(tickers_dir: str, ttl: int) -> list:
     # Список имеющихся файлов
-    files = _files(dirpath=dirpath)
+    files = _files(tickers_dir=tickers_dir)
 
     # Возраст старого файла
     old = files[0] - ttl
@@ -106,7 +106,7 @@ def prune(dirpath: str, ttl: int) -> list:
 
     for file in files:
         if file < old:
-            os.remove(f'{dirpath}/{file}')
+            os.remove(f'{tickers_dir}/{file}')
             result.append(file)
 
     logger.info("Очищены старые файлы %s (new=%s, old=%s, ttl=%s)", result, files[0], old, ttl)
