@@ -23,7 +23,7 @@ def to_json(data: dict) -> str:
 
 
 def to_yaml(data: dict) -> str:
-    return yaml.dump(data, Dumper=IndentSafeDumper)
+    return yaml.dump(data, Dumper=IndentSafeDumper, allow_unicode=True)
 
 
 def to_str1(data: dict, p: bool = False) -> str:
