@@ -9,6 +9,11 @@ from .ticker_diff import TickerDiff
 logger = logging.getLogger("tickbybit.bot")
 
 
+class IndentSafeDumper(yaml.SafeDumper):
+    def increase_indent(self, flow=False, indentless=False):
+        return super(IndentSafeDumper, self).increase_indent(flow, False)
+
+
 def notify(diff) -> None:
     print(json.dumps(diff, indent=2))
 
@@ -18,7 +23,7 @@ def to_json(data: dict) -> str:
 
 
 def to_yaml(data: dict) -> str:
-    return yaml.safe_dump(data)
+    return yaml.dump(data, Dumper=IndentSafeDumper)
 
 
 def to_str1(data: dict, p: bool = False) -> str:
