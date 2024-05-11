@@ -11,14 +11,14 @@ from .tickers import Tickers
 
 DOWNLOAD_PERIOD = int(getenv('DOWNLOAD_PERIOD'))
 
-logger = logging.getLogger("tickbybit.files")
+logger = logging.getLogger(__name__)
 
 
-async def pair(settings: dict, dirpath: str) -> TickersPair:
+async def pair(interval: int, dirpath: str) -> TickersPair:
     """
     Получить пару сравниваемых прайсов из файлового хранилища.
 
-    :param settings: Настройки.
+    :param interval: интервал сравнения, в секундах
     :param dirpath: Путь к каталогу с файлами.
     :return: Старый и новый прайсы.
     """
@@ -27,19 +27,19 @@ async def pair(settings: dict, dirpath: str) -> TickersPair:
 
     # Новый файл
     new_file = files[0]
-    logger.info("Identified new file %s", new_file)
-
-    # Старый файл — первый файл в списке, который старше самого первого файла не более, period (каламбур, да...)
-    old_file = _old(files, period=settings['period'], download_period=DOWNLOAD_PERIOD)
-    logger.info("Identified old file %s", old_file)
-
-    # Прочитать файлы
-    old = await load(time=old_file, dirpath=dirpath)
+    logger.info("Определён новый файл (new_file=%s)", new_file)
     new = await load(time=new_file, dirpath=dirpath)
 
+    # Старый файл — первый файл в списке, который старше самого первого файла не более,
+    # чем на interval + download_period
+    old_file = _old(files, interval=interval, download_period=DOWNLOAD_PERIOD)
+    logger.info("Определён старый файл (old_file=%s)", old_file)
+    old = await load(time=old_file, dirpath=dirpath)
+
     return TickersPair(
-        old=Tickers(time=old_file, tickers=old),
+        interval=interval,
         new=Tickers(time=new_file, tickers=new),
+        old=Tickers(time=old_file, tickers=old),
     )
 
 
@@ -49,19 +49,19 @@ def _files(dirpath: str) -> list[int]:
     return sorted(map(int, files), reverse=True)
 
 
-def _old(files: list[int], period: int, download_period: int) -> int:
+def _old(files: list[int], interval: int, download_period: int) -> int:
     """
     Определить старый файл.
 
-    Это файл, который как можно старше первого файла, но не старше, чем на period + download_period.
+    Это файл, который как можно старше первого файла, но не старше, чем на interval + download_period.
 
     :param files: Список названий файлов.
-    :param period: Период сравнения (миллисекунды).
-    :param download_period: период загрузки новых прайсов, в секундах.
+    :param interval: интервал сравнения, секунды.
+    :param download_period: период загрузки новых прайсов, секунды.
     :return: Название старого файла.
     """
     # Возраст старого файла
-    age = files[0] - period - download_period
+    age = files[0] - interval * 1000 - download_period * 1000
 
     result = None
 

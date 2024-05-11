@@ -9,20 +9,14 @@ from .attr_diff import FloatAttrDiff, StrAttrDiff
 
 
 class TickersPair(BaseModel):
-    old: Tickers
+    interval: int  # интервал сравнения, в секундах
     new: Tickers
+    old: Tickers
 
-    def time(self) -> int:
-        return self.new.time
-
-    def period(self) -> int:
-        return self.new.time - self.old.time
-
-    def diff(self, settings: dict) -> TickersDiff:
+    def diff(self) -> TickersDiff:
         """
         Найти изменения в тикерах между старым и новым прайсами.
 
-        :param settings: Настройки.
         :return: Список изменений тикеров.
         """
 
@@ -32,12 +26,13 @@ class TickersPair(BaseModel):
         for ticker_new in self.new.all():
             ticker_old = self.old.ticker(symbol=ticker_new.symbol)
 
-            attrs_diff = self._attrs_diff(settings, ticker_old, ticker_new)
+            attrs_diff = self._attrs_diff(ticker_old, ticker_new)
 
             ticker_diff = TickerDiff(
                 symbol=ticker_new.symbol,
-                time=self.time(),
-                period=self.period(),
+                time_new=self.new.time,
+                time_old=self.old.time,
+                interval=self.interval,
                 attrs=attrs_diff,
             )
 
@@ -48,11 +43,14 @@ class TickersPair(BaseModel):
         return tickers_diff
 
     # TODO надо передалать этот метод, надо чтобы изменение атрибута создавалось сразу через класс AttrDiff
-    def _attrs_diff(self, settings: dict, ticker_old: Ticker, ticker_new: Ticker) -> AttrsDiff:
+    def _attrs_diff(self, ticker_old: Ticker, ticker_new: Ticker) -> AttrsDiff:
         attrs_diff = {}
 
+        # TODO надо сделать полноценный класс Ticker
+        attrs = ['symbol', 'markPrice', 'openInterestValue']
+
         # Цикл по атрибутам тикера
-        for attr in settings['ticker']:
+        for attr in attrs:
             if attr == 'symbol':
                 attrs_diff[attr] = StrAttrDiff(
                     old=ticker_old[attr],

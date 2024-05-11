@@ -1,14 +1,13 @@
-import re
-
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel
 
 from .attrs_diff import AttrsDiff
 
 
 class TickerDiff(BaseModel):
     symbol: str
-    time: int
-    period: int
+    time_new: int
+    time_old: int
+    interval: int  # интервал сравнения, в секундах
     attrs: AttrsDiff
 
     def to_json(self) -> str:
