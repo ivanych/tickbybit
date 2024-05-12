@@ -79,8 +79,8 @@ def to_tpl2(data: dict, p: bool = False, i: str = 'circle') -> str:
     indicator = globals()[f'_indicator_{i}']
 
     price_indicator = indicator(
-        got=data['attrs']['openInterestValue']['pcnt'],
-        expected=data['attrs']['openInterestValue']['filters']['absolute']['value']
+        got=data['attrs']['markPrice']['pcnt'],
+        expected=data['attrs']['markPrice']['filters']['absolute']['value']
     )
     price_pcnt = _plus(data['attrs']['markPrice']['pcnt'])
 
