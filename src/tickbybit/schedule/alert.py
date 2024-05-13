@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher
 
 from tickbybit.files import pair
 from tickbybit.bot import format
+from tickbybit.models.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
     chat_id = user_id
     state = dp.fsm.resolve_context(bot=bot, chat_id=chat_id, user_id=user_id)
     data = await state.get_data()
-    settings = data['settings']
+    settings = Settings(**data['settings'])
 
     # TODO надо бы перенести кеш в метод files.pair, но там инвалидацию надо продумывать,
     # а тут инвалидируется само при выходе из метода.
@@ -26,7 +27,7 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
     alerts_list = []
 
     # Отсортировать триггеры по интервалу
-    triggers = sorted(settings['triggers'], key=lambda x: x['interval'], reverse=True)
+    triggers = settings.sorted_triggers(reverse=True)
 
     # Цикл по триггерам
     for trigger in triggers:
@@ -52,7 +53,7 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
 
     # Отправка уведомлений в телегу
     for alert in alerts_list:
-        msg = format(td=alert, settings=settings)
+        msg = format(td=alert, format=settings.format)
 
         await bot.send_message(
             chat_id=chat_id,

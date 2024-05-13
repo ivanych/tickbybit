@@ -127,34 +127,34 @@ def _indicator_arrow(got: int | float, expected: int | float = 0) -> str:
         return '⭘'
 
 
-def format(td: TickerDiff, settings: dict) -> str:
+def format(td: TickerDiff, format: str) -> str:
     data = td.model_dump()
 
-    if settings['format'] == 'json':
+    if format == 'json':
         return to_json(data)
-    elif settings['format'] == 'yaml':
+    elif format == 'yaml':
         return to_yaml(data)
-    elif settings['format'] == 'str1':
+    elif format == 'str1':
         return to_str1(data)
-    elif settings['format'] == 'str1p':
+    elif format == 'str1p':
         return to_str1(data, p=True)
-    elif settings['format'] == 'str2':
+    elif format == 'str2':
         return to_str2(data)
-    elif settings['format'] == 'str2p':
+    elif format == 'str2p':
         return to_str2(data, p=True)
-    elif settings['format'] == 'tpl1pa':
+    elif format == 'tpl1pa':
         return to_tpl1(data, i='arrow')
-    elif settings['format'] == 'tpl1pc':
+    elif format == 'tpl1pc':
         return to_tpl1(data, i='circle')
-    elif settings['format'] == 'tpl1ps':
+    elif format == 'tpl1ps':
         return to_tpl1(data, i='square')
-    elif settings['format'] == 'tpl2pa':
+    elif format == 'tpl2pa':
         return to_tpl2(data, i='arrow')
-    elif settings['format'] == 'tpl2pc':
+    elif format == 'tpl2pc':
         return to_tpl2(data, i='circle')
-    elif settings['format'] == 'tpl2ps':
+    elif format == 'tpl2ps':
         return to_tpl2(data, i='square')
 
     else:
-        logger.warning(f"Unknown format \"{settings['format']}\"; used default \"json\"")
+        logger.warning(f"Unknown format \"{format}\"; used default \"json\"")
         return to_json(data)
