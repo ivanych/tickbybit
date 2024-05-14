@@ -1,8 +1,10 @@
-from typing import List, Dict, Any
+from typing import Any
 import re
 
 from pydantic import BaseModel
 from jsonpath_ng import parse
+
+from tickbybit.models.settings.triggers.triggers import Triggers
 
 DEFAULT_SETTINGS = {
     "format": "json",
@@ -30,14 +32,11 @@ DEFAULT_SETTINGS = {
 class Settings(BaseModel):
     format: str
     is_auto: bool
-    triggers: List[Dict[str, Any]]
+    triggers: Triggers
 
     @classmethod
     def new(cls):
         return Settings(**DEFAULT_SETTINGS)
-
-    def sorted_triggers(self, reverse: bool = False) -> List[Dict[str, Any]]:
-        return sorted(self.triggers, key=lambda x: x['interval'], reverse=reverse)
 
     def setup_key(self, path: str, value: Any = None) -> dict:
         jsonpath = parse(path)
