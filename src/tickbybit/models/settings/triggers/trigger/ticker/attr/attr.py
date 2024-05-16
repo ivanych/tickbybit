@@ -3,21 +3,21 @@ from typing import ItemsView
 from pydantic import BaseModel
 
 
-class AttrFilters(BaseModel):
+class Attr(BaseModel):
     pass
 
     # TODO тут надо бы сделать абстрактный метод items(),
     # но не совсем понятно, как это делать в Пидантике.
 
 
-class FloatAttrFilters(AttrFilters):
+class FloatAttr(Attr):
     absolute: float
 
     def items(self) -> ItemsView[str, float]:
         return self.__dict__.items()
 
 
-class StrAttrFilters(AttrFilters):
+class StrAttr(Attr):
     suffix: str
 
     def items(self) -> ItemsView[str, str]:
