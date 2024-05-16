@@ -2,6 +2,7 @@ from typing import Dict
 from pydantic import RootModel
 
 from .attr_diff import FloatAttrDiff, StrAttrDiff
+from tickbybit.models.settings.triggers.trigger.trigger import Trigger
 
 
 class AttrsDiff(RootModel):
@@ -16,7 +17,7 @@ class AttrsDiff(RootModel):
     def __getattr__(self, item):
         return self.root[item]
 
-    def filter(self, trigger: dict) -> bool:
+    def filter(self, trigger: Trigger) -> bool:
         """
         Проверяет прохождение атрибутов через фильтры. Все атрибуты объединяются через "И".
 
@@ -28,7 +29,7 @@ class AttrsDiff(RootModel):
 
         return all(
             map(
-                lambda attr: self.root[attr].filter(trigger['ticker'][attr]),
-                trigger['ticker']
+                lambda kv: self.root[kv[0]].filter(kv[1]),
+                trigger.ticker.items()
             )
         )

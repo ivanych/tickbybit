@@ -3,19 +3,21 @@ from typing import Dict, Optional
 
 from pydantic import BaseModel, computed_field
 
+from tickbybit.models.settings.triggers.trigger.ticker.attr.attr import FloatAttr, StrAttr
+
 
 class AttrDiff(BaseModel):
     old: str | None
     new: str
     filters: Optional[Dict[str, Dict[str, float | str | bool]]] = None
 
-    def filter(self, filters: dict) -> bool:
+    def filter(self, attr: FloatAttr | StrAttr) -> bool:
         """
         Проверяет прохождение атрибута через фильтры. Все фильтры атрибута объединяются через "И".
 
         Возвращает истину, если атрибут проходит через все фильтры.
 
-        :param filters: Словарь с фильтрами для атрибута.
+        :param attr: фильтры атрибута.
         :return:
         """
 
@@ -23,8 +25,8 @@ class AttrDiff(BaseModel):
 
         return all(
             map(
-                lambda key: getattr(self, key)(key, filters[key]),
-                filters
+                lambda kv: getattr(self, kv[0])(kv[0], kv[1]),
+                attr.items()
             )
         )
 

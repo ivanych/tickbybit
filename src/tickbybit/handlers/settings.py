@@ -1,3 +1,4 @@
+import logging
 import re
 
 from aiogram import Router, html
@@ -9,8 +10,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tickbybit.bot import to_yaml
 from tickbybit.states.settings import SettingsStatesGroup
-from tickbybit.models.settings import Settings
+from tickbybit.models.settings.settings import Settings
 
+logger = logging.getLogger(__name__)
 router = Router()
 
 
@@ -49,6 +51,7 @@ async def command_reject(message: Message) -> None:
 async def command_settings(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     settings = Settings(**data['settings'])
+    logger.info('Прочитаны настройки Settings')
 
     settings_yaml = to_yaml(settings.model_dump())
     msg = html.pre_language(settings_yaml, 'YAML')

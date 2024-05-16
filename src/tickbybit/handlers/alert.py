@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from tickbybit.bot import format
 from tickbybit.files import pair
 from tickbybit.states.settings import SettingsStatesGroup
-from tickbybit.models.settings import Settings
+from tickbybit.models.settings.settings import Settings
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -26,11 +26,11 @@ async def command_alert(message: Message, state: FSMContext, tickers_dir: str) -
     alerts_list = []
 
     # Отсортировать триггеры по интервалу
-    triggers = settings.sorted_triggers(reverse=True)
+    triggers = settings.triggers.sorted(reverse=True)
 
     # Цикл по триггерам
-    for trigger in triggers:
-        interval = trigger['interval']
+    for trigger in triggers.list():
+        interval = trigger.interval
         logger.info('Обработка триггера (interval=%s)...', interval)
 
         # Пара прайсов (пытаемся взять из кеша)
@@ -46,7 +46,7 @@ async def command_alert(message: Message, state: FSMContext, tickers_dir: str) -
 
         # Уведомления по тикерам
         # TODO надо тут сделать, чтобы возвращался объект Alerts.
-        alerts = ticker_diffs.filter(trigger=trigger)
+        alerts = ticker_diffs.filter(trigger)
 
         alerts_list.extend(alerts.list())
 

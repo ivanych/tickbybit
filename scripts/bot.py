@@ -20,7 +20,7 @@ from tickbybit.schedule.tickers import download_new_tickers, prune_old_tickers
 from tickbybit.schedule.alert import send_alert
 from tickbybit.menu import set_command_menu
 from tickbybit.settings import get_all
-from tickbybit.models.settings import Settings
+from tickbybit.models.settings.settings import Settings
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 
