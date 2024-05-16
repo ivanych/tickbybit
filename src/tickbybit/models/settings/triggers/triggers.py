@@ -1,6 +1,7 @@
 from typing import List, TypeVar
 
 from pydantic import RootModel
+
 from tickbybit.models.settings.triggers.trigger.trigger import Trigger
 
 # Это костыль, нужен Питон 3.11 для правильного типа Self (https://peps.python.org/pep-0673/)
