@@ -1,7 +1,6 @@
 from typing import Any
 import logging
 import yaml
-import re
 
 from jsonpath_ng import parse
 

@@ -70,7 +70,7 @@ async def command_set(message: Message, command: CommandObject, state: FSMContex
     settings = Settings(**data['settings'])
 
     try:
-        settings_data = settings.setup_key(path=path, value=value)
+        settings_data = settings.set_key(path=path, value=value)
         await state.update_data(settings=settings_data)
 
         text = 'Ключ установлен.\n\n/settings — посмотреть настройки.'
@@ -106,7 +106,7 @@ async def command_on(message: Message, state: FSMContext, scheduler: AsyncIOSche
     settings = Settings(**data['settings'])
 
     try:
-        settings_data = settings.setup_key(path='is_auto', value='true')
+        settings_data = settings.set_key(path='is_auto', value='true')
         await state.update_data(settings=settings_data)
 
         scheduler.resume_job(f"send_alert_u{data['user']['id']}")
@@ -124,7 +124,7 @@ async def command_off(message: Message, state: FSMContext, scheduler: AsyncIOSch
     settings = Settings(**data['settings'])
 
     try:
-        settings_data = settings.setup_key(path='is_auto', value='false')
+        settings_data = settings.set_key(path='is_auto', value='false')
         await state.update_data(settings=settings_data)
 
         scheduler.pause_job(f"send_alert_u{data['user']['id']}")

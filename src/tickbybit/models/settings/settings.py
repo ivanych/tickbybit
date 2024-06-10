@@ -1,10 +1,14 @@
-from typing import Any
+from typing import Any, Literal
 import re
+import logging
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from jsonpath_ng import parse
+from pprint import pformat
 
 from tickbybit.models.settings.triggers.triggers import Triggers
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_SETTINGS = {
     "format": "json",
@@ -30,84 +34,106 @@ DEFAULT_SETTINGS = {
 
 
 class Settings(BaseModel):
-    format: str
-    is_auto: bool
-    triggers: Triggers
+    format: Literal[
+        'json', 'yaml',
+        'str1', 'str1p', 'str2', 'str2p',
+        'tpl1pa', 'tpl1pc', 'tpl1ps', 'tpl2pa', 'tpl2pc', 'tpl2ps'
+    ] = Field(default='json')
+    is_auto: bool = Field(default=False)
+    triggers: Triggers = Field(default_factory=Triggers)
+
+    model_config = ConfigDict(validate_assignment=True)
+
+    @field_validator('format', mode='before')
+    @classmethod
+    def default_format(cls, v: str) -> str:
+        return v if v is not None \
+            else cls.model_fields['format'].default
+
+    @field_validator('is_auto', mode='before')
+    @classmethod
+    def default_is_auto(cls, v: bool) -> bool:
+        return v if v is not None \
+            else cls.model_fields['is_auto'].default
+
+    @field_validator('triggers', mode='before')
+    @classmethod
+    def default_triggers(cls, v: Triggers) -> Triggers:
+        return v if v is not None \
+            else cls.model_fields['triggers'].default_factory()
 
     @classmethod
-    def new(cls):
+    def new(cls):  # pragma: no cover
         return Settings(**DEFAULT_SETTINGS)
 
-    def setup_key(self, path: str, value: Any = None) -> dict:
-        jsonpath = parse(path)
-        jsonvalue = value
+    def set_key(self, path: str, value: Any = None) -> dict:
 
-        # Исключения и дефолты
+        # Узлы пути
+        nodes = path.split(".")
+        logger.info('        nodes = %s', nodes)
 
-        # Используемые атрибуты тикера
-        attrs = ['symbol', 'markPrice', 'openInterestValue']
-        attrs_re = f"({'|'.join(attrs)})"
+        transit_nodes = nodes[0:-1]
+        logger.info('transit_nodes = %s', transit_nodes)
 
-        # format
-        if re.match('format$', path):
-            vals = ['json', 'yaml', 'str1', 'str1p', 'str2', 'str2p', 'tpl1pa', 'tpl1pc', 'tpl1ps', 'tpl2pa', 'tpl2pc',
-                    'tpl2ps']
-            val = '|'.join(vals)
-            assert re.match(f'({val})$', value), f'Допустимые значения: {vals}'
+        # Обработка последнего узла отличается от прочих, поэтому отделяем его для отдельной обработки
+        last_node = nodes[-1]
+        logger.info('    last_node = %s', last_node)
 
-        # is_auto
-        elif re.match('is_auto$', path):
-            vals = ['true', 'false']
-            val = '|'.join(vals)
-            assert re.match(f'({val})$', value), f'Допустимые значения: {vals}'
-            jsonvalue = True if value == 'true' else False
+        # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
+        # Если вместо числового индекса указан '+', то это добавление нового элемента
+        # Скобок с индексом в узле может не быть, тогда будет запомнен только атрибут
+        renode = re.compile(r'^(.+?)(?:\[(\d+|\+)\])?$')
 
-        # triggers
-        elif re.match('triggers$', path):
-            raise Exception(f'Нельзя устанавливать ключ triggers')
+        obj = self
 
-        # triggers[*]
-        elif re.match('triggers\.?\[\d+\]$', path):
-            raise Exception(f'Нельзя устанавливать ключ triggers[*]')
+        # Обработка транзитных узлов
+        for node in transit_nodes:
+            matches = renode.findall(node)
 
-        # triggers[*].icon
-        elif re.match('triggers\.?\[\d+\]\.icon$', path):
-            assert len(value) > 0, 'Нужно указать значение'
+            # Если индекса нет, то в matches[0][1] будет пустая строка ''
+            if matches[0][1]:
+                attr = getattr(obj, matches[0][0])
 
-        # triggers[*].interval
-        elif re.match('triggers\.?\[\d+\]\.interval$', path):
-            # TODO тут надо бы перехватить исключение и вывести более читабельное сообщение
-            jsonvalue = int(value)
-
-        # triggers[*].ticker
-        # пока не поддерживается
-
-        # triggers[*].ticker.[attr]
-        # пока не поддерживается
-
-        # triggers[*].ticker.[attr].[key]
-        elif re.match(f"triggers\.?\[\d+\]\.ticker\.{attrs_re}\.\w+$", path):
-            if re.match('.+absolute$', path):
-                if value is None:
-                    jsonvalue = 1
+                if matches[0][1] == '+':
+                    logger.info('%s.append()', attr.__class__.__name__)
+                    attr.append()
+                    obj = attr[-1]
                 else:
-                    # TODO тут надо бы перехватить исключение и вывести более читабельное сообщение
-                    jsonvalue = float(value)
-            elif re.match('.+suffix$', path):
-                if value is None:
-                    raise Exception(f'Нужно указать значение')
+                    i = int(matches[0][1])
+                    obj = attr[i]
             else:
-                # TODO тут надо бы часть [attr] показывать именно как плейсхолдер [attr], а не как буквальное значение
-                raise Exception(f'Ключ <code>{path}</code> не поддерживается')
+                obj = getattr(obj, node)
 
+            logger.info('  transit obj = %s.%s = %s', obj.__class__.__name__, node, pformat(obj))
+
+        logger.info('          obj = %s', pformat(obj))
+        logger.info('        value = %s', pformat(value))
+
+        # Обработка последнего узла
+        # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
+        # Если вместо числового индекса указан '+', то это добавление нового элемента
+        # Скобок с индексом в узле может не быть, тогда будет запомнен только атрибут
+        renode = re.compile(r'^(.+?)(?:\[(\d+|\+)\])?$')
+        matches = renode.findall(last_node)
+
+        # Если индекса нет, то в matches[0][1] будет пустая строка ''
+        if matches[0][1]:
+            attr = getattr(obj, matches[0][0])
+
+            if matches[0][1] == '+':
+                attr.append(value)
+            else:
+                i = int(matches[0][1])
+                attr[i] = value
         else:
-            raise Exception(f'Установка ключа {path} пока не реализована')
+            logger.info('setattr(%s, %s, %s)', obj.__class__.__name__, last_node, value)
+            setattr(obj, last_node, value)
 
-        settings_new = jsonpath.update_or_create(self.model_dump(), jsonvalue)
+        logger.info('      new obj = %s', pformat(obj))
 
-        return settings_new
+        return self.model_dump()
 
-    def delete_key(self, path: str) -> dict:
+    def delete_key(self, path: str) -> dict:  # pragma: no cover
         jsonpath = parse(path)
 
         # Исключения и дефолты

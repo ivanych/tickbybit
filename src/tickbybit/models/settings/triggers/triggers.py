@@ -1,6 +1,6 @@
-from typing import List, TypeVar
+from typing import List, TypeVar, Optional
 
-from pydantic import RootModel
+from pydantic import RootModel, ConfigDict, Field
 
 from tickbybit.models.settings.triggers.trigger.trigger import Trigger
 
@@ -9,9 +9,34 @@ SelfTriggers = TypeVar("SelfTriggers", bound="Triggers")
 
 
 class Triggers(RootModel):
-    root: List[Trigger]
+    root: List[Trigger] = Field(default=[])
 
-    def sorted(self, reverse: bool = False) -> SelfTriggers:
+    model_config = ConfigDict(validate_assignment=True)
+
+    def __getitem__(self, key) -> Trigger:  # pragma: no cover
+        return self.root[key]
+
+    def __setitem__(self, key: int, value: dict = None):
+        if isinstance(value, dict):
+            trigger = Trigger(**value)
+            self.root[key] = trigger
+        elif value is None:
+            trigger = Trigger()
+            self.root[key] = trigger
+        else:
+            raise ValueError('Значение должно быть словарём')
+
+    def append(self, value: dict = None):
+        if isinstance(value, dict):
+            trigger = Trigger(**value)
+            self.root.append(trigger)
+        elif value is None:
+            trigger = Trigger()
+            self.root.append(trigger)
+        else:
+            raise ValueError('Значение должно быть словарём')
+
+    def sorted(self, reverse: bool = False) -> SelfTriggers:  # pragma: no cover
         return Triggers(
             sorted(
                 self.root,

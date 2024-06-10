@@ -10,3 +10,8 @@ dependencies = [
     "pyyaml",
     "apscheduler",
 ]
+
+[tool.coverage.run]
+omit = [
+    "src/tickbybit/models/settings/**/__init__.py",
+]
