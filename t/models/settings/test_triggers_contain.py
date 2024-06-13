@@ -49,3 +49,28 @@ def test_set_item_invalid(s):
 
     with pytest.raises(ValueError):
         settings_data = settings.set_key(path='triggers[0]', value='qwe')
+
+
+# /del triggers[0]
+# успешно, результат — пустой словарь
+def test_del_item(s):
+    settings = s.model_copy(deep=True)
+
+    settings_data = settings.del_key(path='triggers[0]')
+
+    assert isinstance(settings_data['triggers'], list)
+    assert len(settings_data['triggers']) == 0
+
+
+# /set triggers[+]
+# затем
+# /del triggers[-]
+# успешно, результат — словарь с одним триггером
+def test_del_pop(s):
+    settings = s.model_copy(deep=True)
+
+    settings_data = settings.set_key(path='triggers[+]')
+    settings_data = settings.del_key(path='triggers[-]')
+
+    assert isinstance(settings_data['triggers'], list)
+    assert len(settings_data['triggers']) == 1

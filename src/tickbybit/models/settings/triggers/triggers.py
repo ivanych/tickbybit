@@ -1,4 +1,4 @@
-from typing import List, TypeVar, Optional
+from typing import List, TypeVar
 
 from pydantic import RootModel, ConfigDict, Field
 
@@ -35,6 +35,9 @@ class Triggers(RootModel):
             self.root.append(trigger)
         else:
             raise ValueError('Значение должно быть словарём')
+
+    def pop(self, index: int = -1):
+        self.root.pop(index)
 
     def sorted(self, reverse: bool = False) -> SelfTriggers:  # pragma: no cover
         return Triggers(

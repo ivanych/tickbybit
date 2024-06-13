@@ -90,7 +90,7 @@ async def command_del(message: Message, command: CommandObject, state: FSMContex
     settings = Settings(**data['settings'])
 
     try:
-        settings_data = settings.delete_key(path=path)
+        settings_data = settings.del_key(path=path)
         await state.update_data(settings=settings_data)
 
         text = 'Ключ удалён.\n\n/settings — посмотреть настройки.'

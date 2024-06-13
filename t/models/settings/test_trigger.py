@@ -125,3 +125,12 @@ def test_set_ticker_invalid(s):
 
     with pytest.raises(ValidationError):
         settings_data = settings.set_key(path='triggers[0].ticker', value='qwe')
+
+
+# /del triggers[0].icon
+# исключение, нельзя удалять атрибут
+def test_del_icon(s):
+    settings = s.model_copy(deep=True)
+
+    with pytest.raises(ValueError):
+        settings_data = settings.del_key(path='triggers[0].icon')

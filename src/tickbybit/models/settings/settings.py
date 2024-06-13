@@ -1,10 +1,9 @@
 from typing import Any, Literal
 import re
 import logging
+from pprint import pformat
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from jsonpath_ng import parse
-from pprint import pformat
 
 from tickbybit.models.settings.triggers.triggers import Triggers
 
@@ -79,10 +78,45 @@ class Settings(BaseModel):
         last_node = nodes[-1]
         logger.info('    last_node = %s', last_node)
 
-        # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
-        # Если вместо числового индекса указан '+', то это добавление нового элемента
-        # Скобок с индексом в узле может не быть, тогда будет запомнен только атрибут
-        renode = re.compile(r'^(.+?)(?:\[(\d+|\+)\])?$')
+        obj = self._transit_obj(transit_nodes, enable_append=True)
+        logger.info('          obj = %s', pformat(obj))
+
+        logger.info('        value = %s', pformat(value))
+
+        self._set_obj(obj, last_node, value)
+        logger.info('      new obj = %s', pformat(obj))
+
+        return self.model_dump()
+
+    def del_key(self, path: str) -> dict:
+
+        # Узлы пути
+        nodes = path.split(".")
+        logger.info('        nodes = %s', nodes)
+
+        transit_nodes = nodes[0:-1]
+        logger.info('transit_nodes = %s', transit_nodes)
+
+        # Обработка последнего узла отличается от прочих, поэтому отделяем его для отдельной обработки
+        last_node = nodes[-1]
+        logger.info('    last_node = %s', last_node)
+
+        obj = self._transit_obj(transit_nodes)
+        logger.info('          obj = %s', pformat(obj))
+
+        self._del_obj(obj, last_node)
+        logger.info('      new obj = %s', pformat(obj))
+
+        return self.model_dump()
+
+    def _transit_obj(self, transit_nodes: list[str], enable_append: bool = False) -> Any:
+        # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс.
+        # Если вместо числового индекса указан '+', то это добавление нового элемента.
+        # ('-' на самом деле тут можно было бы не указывать и не распознавать,
+        # потому что удалять промежуточные элементы всё-равно нельзя,
+        # но для изящности сообщения об ошибке сделаем обработку '-')
+        # Скобок с индексом в узле может не быть, тогда будет запомнен только атрибут.
+        renode = re.compile(r'^(.+?)(?:\[(\d+|\+|\-)\])?$')
 
         obj = self
 
@@ -90,92 +124,71 @@ class Settings(BaseModel):
         for node in transit_nodes:
             matches = renode.findall(node)
 
-            # Если индекса нет, то в matches[0][1] будет пустая строка ''
+            # Обращение к индексу (если индекса нет, то в matches[0][1] будет пустая строка '')
             if matches[0][1]:
                 attr = getattr(obj, matches[0][0])
 
-                if matches[0][1] == '+':
+                # Добавлять промежуточную ноду можно только при установке ключа, но не при удалении
+                if matches[0][1] == '+' and enable_append:
                     logger.info('%s.append()', attr.__class__.__name__)
+
                     attr.append()
                     obj = attr[-1]
+                elif matches[0][1] == '-':
+                    raise ValueError('Нельзя удалять промежуточные элементы пути')
                 else:
                     i = int(matches[0][1])
                     obj = attr[i]
+            # Обращение к атрибуту
             else:
                 obj = getattr(obj, node)
 
             logger.info('  transit obj = %s.%s = %s', obj.__class__.__name__, node, pformat(obj))
 
-        logger.info('          obj = %s', pformat(obj))
-        logger.info('        value = %s', pformat(value))
+        return obj
 
+    def _set_obj(self, obj, node, value) -> None:
         # Обработка последнего узла
         # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
         # Если вместо числового индекса указан '+', то это добавление нового элемента
         # Скобок с индексом в узле может не быть, тогда будет запомнен только атрибут
         renode = re.compile(r'^(.+?)(?:\[(\d+|\+)\])?$')
-        matches = renode.findall(last_node)
+        matches = renode.findall(node)
 
-        # Если индекса нет, то в matches[0][1] будет пустая строка ''
+        # Обращение к индексу (если индекса нет, то в matches[0][1] будет пустая строка '')
         if matches[0][1]:
             attr = getattr(obj, matches[0][0])
 
             if matches[0][1] == '+':
+                logger.info('%s.append(%s)', attr.__class__.__name__, pformat(value))
                 attr.append(value)
             else:
                 i = int(matches[0][1])
+                logger.info('%s[%s] = %s', attr.__class__.__name__, i)
                 attr[i] = value
         else:
-            logger.info('setattr(%s, %s, %s)', obj.__class__.__name__, last_node, value)
-            setattr(obj, last_node, value)
+            logger.info('setattr(%s, %s, %s)', obj.__class__.__name__, node, pformat(value))
+            setattr(obj, node, value)
 
-        logger.info('      new obj = %s', pformat(obj))
+    def _del_obj(self, obj, last_node):
+        # Обработка последнего узла
+        # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
+        # Если вместо числового индекса указан '-', то это удаление последнего элемента
+        # Скобок с индексом в узле может не быть, тогда будет запомнен только атрибут
+        renode = re.compile(r'^(.+?)(?:\[(\d+|\-)\])?$')
+        matches = renode.findall(last_node)
 
-        return self.model_dump()
+        # Обращение к индексу (если индекса нет, то в matches[0][1] будет пустая строка '')
+        if matches[0][1]:
+            attr = getattr(obj, matches[0][0])
 
-    def delete_key(self, path: str) -> dict:  # pragma: no cover
-        jsonpath = parse(path)
-
-        # Исключения и дефолты
-
-        # format
-        if re.match('format$', path):
-            raise Exception(f'Нельзя удалять ключ format')
-
-        # is_auto
-        if re.match('is_auto$', path):
-            raise Exception(f'Нельзя удалять ключ is_auto')
-
-        # triggers
-        elif re.match('triggers$', path):
-            raise Exception(f'Нельзя удалять ключ triggers')
-
-        # triggers[*]
-        # пока не поддерживается
-
-        # triggers[*].icon
-        elif re.match('triggers\.?\[\d+\]\.icon$', path):
-            pass
-
-        # triggers[*].interval
-        elif re.match('triggers\.?\[\d+\]\.interval$', path):
-            raise Exception(f'Нельзя удалять ключ triggers[*].interval')
-
-        # triggers[*].ticker
-        elif re.match('triggers\.?\[\d+\]\.ticker$', path):
-            raise Exception(f'Нельзя удалять ключ triggers[*].ticker')
-
-        # triggers[*].ticker.[attr]
-        elif re.match('triggers\.?\[\d+\]\.ticker\.\w+$', path):
-            pass
-
-        # triggers[*].ticker.[attr].[key]
-        elif re.match('triggers\.?\[\d+\]\.ticker\.\w+\.\w+$', path):
-            pass
-
+            if matches[0][1] == '-':
+                logger.info('%s.pop()', attr.__class__.__name__)
+                attr.pop()
+            else:
+                i = int(matches[0][1])
+                logger.info('%s.pop(%s)', attr.__class__.__name__, i)
+                attr.pop(i)
+        # Обращение к атрибуту
         else:
-            raise Exception(f'Удаление ключа {path} пока не реализовано')
-
-        settings_new = jsonpath.filter(lambda d: True, self.model_dump())
-
-        return settings_new
+            raise ValueError('Удалять можно только элементы списка')
