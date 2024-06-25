@@ -3,6 +3,7 @@ from typing import List, TypeVar
 from pydantic import RootModel
 
 from .ticker_diff import TickerDiff
+from tickbybit.models.settings.triggers.trigger.trigger import Trigger
 
 # Это костыль, нужен Питон 3.11 для правильного типа Self (https://peps.python.org/pep-0673/)
 SelfTickersDiff = TypeVar("SelfTickersDiff", bound="TickersDiff")
@@ -17,7 +18,7 @@ class TickersDiff(RootModel):
     def list(self) -> list[TickerDiff]:
         return self.root
 
-    def filter(self, trigger: dict) -> SelfTickersDiff:
+    def filter(self, trigger: Trigger) -> SelfTickersDiff:
         # TODO Не уверен, что это хорошее решение.
         #
         # Копия нужна из-за того, что данные о применённых и сработавших фильтрах (в частности, флаг is_alert)

@@ -19,7 +19,8 @@ from tickbybit.storages.yamlfile import FileStorage
 from tickbybit.schedule.tickers import download_new_tickers, prune_old_tickers
 from tickbybit.schedule.alert import send_alert
 from tickbybit.menu import set_command_menu
-from tickbybit.settings import settings
+from tickbybit.settings import get_all
+from tickbybit.models.settings.settings import Settings
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 
@@ -87,18 +88,18 @@ async def main() -> None:
 
     # Автоматическая отправка уведомлений
     # (тут нам понадобятся все данные из хранилища)
-    all_data = settings(file=SETTINGS_FILE)
+    all_data = get_all(file=SETTINGS_FILE)
 
     for key in all_data:
         # Смотрим только ключи с данными
         if '_data' in key:
             user_id = all_data[key]['user']['id']
-            is_auto = all_data[key]['settings']['is_auto']
+            settings = Settings(**all_data[key]['settings'])
 
             # Если у пользователя включена автоматическая отправка уведомлений,
             # то передаём undefined — это что-то типа дефолта в apscheduler-е,
             # иначе передаём None — это сразу ставит задачу на паузу
-            next_run_time = undefined if is_auto else None
+            next_run_time = undefined if settings.is_auto else None
 
             # Отправка уведомлений пользователю
             scheduler.add_job(

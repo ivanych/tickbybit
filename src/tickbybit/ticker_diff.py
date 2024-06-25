@@ -3,6 +3,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from .attrs_diff import AttrsDiff
+from tickbybit.models.settings.triggers.trigger.trigger import Trigger
 
 
 class TickerDiff(BaseModel):
@@ -16,10 +17,10 @@ class TickerDiff(BaseModel):
     def to_json(self) -> str:
         return self.model_dump_json(indent=2)
 
-    def filter(self, trigger: dict) -> bool:
+    def filter(self, trigger: Trigger) -> bool:
         is_alert = self.attrs.filter(trigger)
 
         if is_alert:
-            self.icon = trigger.get('icon')
+            self.icon = trigger.icon
 
         return is_alert

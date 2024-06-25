@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher
 
 from tickbybit.files import pair
 from tickbybit.bot import format
+from tickbybit.models.settings.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
     chat_id = user_id
     state = dp.fsm.resolve_context(bot=bot, chat_id=chat_id, user_id=user_id)
     data = await state.get_data()
-    settings = data['settings']
+    settings = Settings(**data['settings'])
 
     # TODO надо бы перенести кеш в метод files.pair, но там инвалидацию надо продумывать,
     # а тут инвалидируется само при выходе из метода.
@@ -26,11 +27,11 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
     alerts_list = []
 
     # Отсортировать триггеры по интервалу
-    triggers = sorted(settings['triggers'], key=lambda x: x['interval'], reverse=True)
+    triggers = settings.triggers.sorted(reverse=True)
 
     # Цикл по триггерам
-    for trigger in triggers:
-        interval = trigger['interval']
+    for trigger in triggers.list():
+        interval = trigger.interval
         logger.info('Обработка триггера (interval=%s)...', interval)
 
         # Пара прайсов (пытаемся взять из кеша)
@@ -46,13 +47,13 @@ async def send_alert(dp: Dispatcher, bot: Bot, user_id: int, tickers_dir: str) -
 
         # Уведомления по тикерам
         # TODO надо тут сделать, чтобы возвращался объект Alerts.
-        alerts = ticker_diffs.filter(trigger=trigger)
+        alerts = ticker_diffs.filter(trigger)
 
         alerts_list.extend(alerts.list())
 
     # Отправка уведомлений в телегу
     for alert in alerts_list:
-        msg = format(td=alert, settings=settings)
+        msg = format(alert, format=settings.format)
 
         await bot.send_message(
             chat_id=chat_id,
