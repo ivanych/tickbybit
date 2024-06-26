@@ -6,7 +6,7 @@
 # https://docs.docker.com/engine/reference/builder/
 
 ARG PYTHON_VERSION=3.10.12
-FROM python:${PYTHON_VERSION}-slim as base
+FROM python:${PYTHON_VERSION}-slim AS base
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -51,4 +51,4 @@ USER appuser
 COPY . .
 
 # Run the application.
-CMD python scripts/bot.py
+CMD ["scripts/bot.py"]
