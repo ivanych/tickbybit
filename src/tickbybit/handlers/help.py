@@ -13,22 +13,16 @@ async def command_help(message: Message) -> None:
     Посмотреть настройки:
     <code>/settings</code>
 
-    Установить значение ключа:
+    Установить значение любого ключа:
     <code>/set путь.к.ключу: значение</code>
     <code>/set путь[1].к.ключу: значение</code>
-
-    Добавить элемент в конец списка:
-    <code>/set путь[+]</code>
-
-    Удалить произвольный элемент из списка:
-    <code>/del путь[1]</code>
-
-    Удалить элемент из конца списка:
-    <code>/del путь[-]</code>
 
 <b>ТРИГГЕРЫ</b>
     Добавить триггер:
     <code>/set triggers[+]</code>
+
+    Удалить триггер:
+    <code>/del triggers[1]</code>
 
     Установить интервал триггера (в секундах):
     <code>/set triggers[0].interval: 60</code>
@@ -44,16 +38,19 @@ async def command_help(message: Message) -> None:
     Получить уведомления немедленно:
     <code>/alert</code>
 
+    Установить формат уведомления:
+    <code>/set format: формат</code>
+
     Включить автоматические уведомления (каждую минуту):
-    <code>/set is_alert: true</code>
     <code>/on</code>
 
     Выключить автоматические уведомления:
-    <code>/set is_alert: false</code>
     <code>/off</code>
 
-    Установить формат уведомления:
-    <code>/set format: формат</code>
+
+<b>ПОЛНАЯ ДОКУМЕНТАЦИЯ</b>
+
+    https://github.com/ivanych/tickbybit
     """
 
-    await message.answer(msg_help)
+    await message.answer(msg_help, disable_web_page_preview=True)
