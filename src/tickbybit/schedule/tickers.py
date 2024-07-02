@@ -14,6 +14,12 @@ async def download_new_tickers(tickers_dir: str) -> None:
 
 
 async def prune_old_tickers(tickers_dir: str, ttl: int) -> None:
+    """
+
+    :param tickers_dir: каталог с прайсами
+    :param ttl: время жизни прайса (в секундах)
+    :return: None
+    """
     prune(tickers_dir=tickers_dir, ttl=ttl)
 
     logger.info("Удалены старые старые прайсы")

@@ -96,11 +96,17 @@ async def load(time: int, tickers_dir: str) -> dict:
 
 
 def prune(tickers_dir: str, ttl: int) -> list:
+    """
+
+    :param tickers_dir: каталог с прайсами
+    :param ttl: время жизни прайса (в секундах)
+    :return: список удалённых файлов
+    """
     # Список имеющихся файлов
     files = _files(tickers_dir=tickers_dir)
 
-    # Возраст старого файла
-    old = files[0] - ttl
+    # Возраст старого файла (в миллисекундах)
+    old = files[0] - ttl*1000
 
     result = []
 
