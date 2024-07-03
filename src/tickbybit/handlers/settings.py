@@ -9,7 +9,7 @@ from aiogram.fsm.context import FSMContext
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from tickbybit.bot import to_yaml
-from tickbybit.states.settings import SettingsStatesGroup
+from tickbybit.states.settings import SettingsStatesGroup, SStatesGroup
 from tickbybit.models.settings.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -134,3 +134,53 @@ async def command_off(message: Message, state: FSMContext, scheduler: AsyncIOSch
         text = str(e)
 
     await message.answer(text)
+
+
+
+
+
+
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, CallbackQuery, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram import F
+
+def make_row_keyboard(items: list[str]) -> ReplyKeyboardMarkup:
+    """
+    Создаёт реплай-клавиатуру с кнопками в один ряд
+    :param items: список текстов для кнопок
+    :return: объект реплай-клавиатуры
+    """
+    row = [KeyboardButton(text=item) for item in items]
+    return ReplyKeyboardMarkup(keyboard=[row], resize_keyboard=True)
+
+available_food_names = ["Суши", "Спагетти", "Хачапури"]
+
+@router.message(Command("st"))
+async def command_s(message: Message, state: FSMContext):
+    data = await state.get_data()
+    settings = Settings(**data['settings'])
+
+    buttons = [
+        [InlineKeyboardButton(text=f"format: {settings.format}", callback_data="input_format_value")],
+        [InlineKeyboardButton(text="triggers...", callback_data="path_triggers")],
+    ]
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    await message.answer(
+        text="Выберите ключ:",
+        reply_markup=keyboard
+    )
+
+    await state.set_state(SStatesGroup.start)
+
+@router.callback_query(F.data == "input_format_value")
+async def cb_input_format_value(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    settings = Settings(**data['settings'])
+
+    msg_format = html.pre_language(f'settings: {settings.format}', 'YAML')
+    await callback.message.edit_text(
+        text=f"Установите формат.\n{msg_format}",
+    )
+
+    await state.set_state(SStatesGroup.input_format_value)
