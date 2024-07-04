@@ -8,6 +8,8 @@ async def set_command_menu(bot: Bot) -> bool:
         BotCommand(command='/off', description='Выключить уведомления'),
         BotCommand(command='/alert', description='Получить уведомления'),
         BotCommand(command='/settings', description='Посмотреть настройки'),
+        BotCommand(command='/set', description='Установить ключ в настройках'),
+        BotCommand(command='/del', description='Удалить триггер из настроек'),
         BotCommand(command='/help', description='Посмотреть инструкцию'),
     ]
 
