@@ -6,5 +6,5 @@ class SettingsStatesGroup(StatesGroup):
 
 class SStatesGroup(StatesGroup):
     start = State()
-    input_format_value = State()
-    triggers = State()
+    value_format = State()
+    path_triggers = State()
