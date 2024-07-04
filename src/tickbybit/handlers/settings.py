@@ -61,7 +61,7 @@ async def command_settings(message: Message, state: FSMContext) -> None:
 
 @router.message(Command("set"), SettingsStatesGroup.registered)
 async def command_set(message: Message, command: CommandObject, state: FSMContext) -> None:
-
+    # Если прилетела каоманда с аргументами — устанавливаем ключ
     if command.args:
         # Разбор аргументов команды
         args = re.split(r'\s*:\s*', command.args.strip(), 1)
@@ -71,6 +71,8 @@ async def command_set(message: Message, command: CommandObject, state: FSMContex
         text = await _set(path, state, value)
 
         await message.answer(text)
+
+    # Если прилетела голая команды — запускаем диалог настройки
     else:
         data = await state.get_data()
         settings = Settings(**data['settings'])
@@ -101,8 +103,8 @@ async def _set(path, state, value):
         settings_data = settings.set_key(path=path, value=value)
         await state.update_data(settings=settings_data)
 
-        value_pre = html.pre(value)
-        text = f"Ключ <b>{path}</b> установлен.\n\nНовое значение:\n{value_pre}"
+        value_pre = html.pre_language(value, 'YAML')
+        text = f'Установлен ключ <b>{path}</b>.\n\nНовое значение:\n{value_pre}'
     except Exception as e:
         text = str(e)
 
@@ -165,43 +167,17 @@ async def command_off(message: Message, state: FSMContext, scheduler: AsyncIOSch
     await message.answer(text)
 
 
-
-
-
-
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, CallbackQuery, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import F
 from aiogram.filters.callback_data import CallbackData
-from typing import Optional
+from typing import Optional, get_args, Literal, get_origin
 
 
 class FormatCallbackData(CallbackData, prefix="st"):
     action: str
     path: str
     value: Optional[str] = None
-
-
-@router.message(Command("st"))
-async def command_s(message: Message, state: FSMContext):
-    data = await state.get_data()
-    settings = Settings(**data['settings'])
-
-    builder = InlineKeyboardBuilder()
-    builder.button(
-        text=f"format: {settings.format}", callback_data=FormatCallbackData(action='value', path="format")
-    )
-    builder.button(
-        text="triggers...", callback_data=FormatCallbackData(action='path', path="triggers")
-    )
-    builder.adjust(1)
-
-    await message.answer(
-        text="Выберите ключ:",
-        reply_markup=builder.as_markup()
-    )
-
-    await state.set_state(SStatesGroup.start)
 
 
 @router.callback_query(FormatCallbackData.filter(F.action == "value"))
@@ -211,25 +187,34 @@ async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, s
     data = await state.get_data()
     settings = Settings(**data['settings'])
 
-    formats =         ['json', 'yaml',
-        'str1', 'str1p', 'str2', 'str2p',
-        'tpl1pa', 'tpl1pc', 'tpl1ps', 'tpl2pa', 'tpl2pc', 'tpl2ps']
 
-    builder = InlineKeyboardBuilder()
-    for format in formats:
-        builder.button(
-            text=format, callback_data=FormatCallbackData(action='set', path=path, value=format)
+    node_annotation = settings.model_fields['format'].annotation
+    print(f'node_annotation = {node_annotation}')
+
+    # Ключ - литерал
+    if get_origin(node_annotation) is Literal:
+        node_args = get_args(node_annotation)
+        print(f'node_args = {node_args}')
+
+        builder = InlineKeyboardBuilder()
+        for arg in node_args:
+            builder.button(
+                text=arg, callback_data=FormatCallbackData(action='set', path=path, value=arg)
+            )
+        builder.adjust(3)
+
+        value_pre = html.pre_language(settings.format, 'YAML')
+        await callback.message.edit_text(
+            text=f"Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}",
+            reply_markup=builder.as_markup()
         )
-    #builder.adjust(4)
 
-    value_pre = html.pre(settings.format)
-    await callback.message.edit_text(
-        text=f"Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}\n(action={callback_data.action}, path={callback_data.path}, value={callback_data.value})",
-        reply_markup=builder.as_markup()
-    )
-
-    await state.set_state(SStatesGroup.value_format)
-
+    else:
+        value_pre = html.pre_language(settings.format, 'YAML')
+        await callback.message.edit_text(
+            text=f"Введите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}",
+            #reply_markup=builder.as_markup()
+        )
 
 @router.callback_query(FormatCallbackData.filter(F.action == "set"))
 async def cb_set(callback: CallbackQuery, callback_data: FormatCallbackData, state: FSMContext):
@@ -239,5 +224,3 @@ async def cb_set(callback: CallbackQuery, callback_data: FormatCallbackData, sta
     text = await _set(path, state, value)
 
     await callback.message.edit_text(text)
-
-    await state.set_state(SettingsStatesGroup.registered)

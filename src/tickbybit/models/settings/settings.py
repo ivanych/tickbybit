@@ -65,6 +65,17 @@ class Settings(BaseModel):
     def new(cls):  # pragma: no cover
         return Settings(**DEFAULT_SETTINGS)
 
+    def get_key(self, path: str) -> Any:
+
+        # Узлы пути
+        nodes = path.split(".")
+        logger.info('        nodes = %s', nodes)
+
+        obj = self._transit_obj(nodes, enable_append=True)
+        logger.info('          obj = %s', pformat(obj))
+
+        return obj WIP
+
     def set_key(self, path: str, value: Any = None) -> dict:
 
         # Узлы пути
