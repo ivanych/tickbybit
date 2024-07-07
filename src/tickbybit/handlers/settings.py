@@ -61,7 +61,8 @@ async def command_settings(message: Message, state: FSMContext) -> None:
 
 @router.message(Command("set"), SettingsStatesGroup.registered)
 async def command_set(message: Message, command: CommandObject, state: FSMContext) -> None:
-    # Если прилетела каоманда с аргументами — устанавливаем ключ
+
+    # Если прилетела команда с аргументами — устанавливаем ключ
     if command.args:
         # Разбор аргументов команды
         args = re.split(r'\s*:\s*', command.args.strip(), 1)
@@ -72,7 +73,7 @@ async def command_set(message: Message, command: CommandObject, state: FSMContex
 
         await message.answer(text)
 
-    # Если прилетела голая команды — запускаем диалог настройки
+    # Если прилетела команда без аргументов — запускаем диалог установки ключа
     else:
         data = await state.get_data()
         settings = Settings(**data['settings'])
@@ -83,7 +84,7 @@ async def command_set(message: Message, command: CommandObject, state: FSMContex
             text=f'format: {settings.format}', callback_data=FormatCallbackData(action='value', path="format")
         )
         builder.button(
-            text="triggers...", callback_data=FormatCallbackData(action='path', path="triggers")
+            text="triggers...", callback_data=FormatCallbackData(action='value', path="triggers")
         )
         builder.adjust(1)
 
@@ -172,7 +173,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram import F
 from aiogram.filters.callback_data import CallbackData
 from typing import Optional, get_args, Literal, get_origin
-
+from pprint import pformat
 
 class FormatCallbackData(CallbackData, prefix="st"):
     action: str
@@ -182,39 +183,42 @@ class FormatCallbackData(CallbackData, prefix="st"):
 
 @router.callback_query(FormatCallbackData.filter(F.action == "value"))
 async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, state: FSMContext):
-    path = callback_data.path
 
+    # Настройки
     data = await state.get_data()
     settings = Settings(**data['settings'])
 
+    path = callback_data.path
 
-    node_annotation = settings.model_fields['format'].annotation
-    print(f'node_annotation = {node_annotation}')
+    # Узел настроек
+    node = settings.get_node(path)
+    annotation = settings.get_annotation(path)
 
-    # Ключ - литерал
-    if get_origin(node_annotation) is Literal:
-        node_args = get_args(node_annotation)
-        print(f'node_args = {node_args}')
+    # Узел - литерал
+    if get_origin(annotation) is Literal:
+        annotation_args = get_args(annotation)
+        print(f'annotation_args = {annotation_args}')
 
         builder = InlineKeyboardBuilder()
-        for arg in node_args:
+        for arg in annotation_args:
             builder.button(
                 text=arg, callback_data=FormatCallbackData(action='set', path=path, value=arg)
             )
         builder.adjust(3)
 
-        value_pre = html.pre_language(settings.format, 'YAML')
+        node_pre = html.pre_language(node, 'YAML')
         await callback.message.edit_text(
-            text=f"Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}",
+            text=f"Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{node_pre}",
             reply_markup=builder.as_markup()
         )
 
     else:
-        value_pre = html.pre_language(settings.format, 'YAML')
+        node_pre = html.pre_language(node, 'YAML')
         await callback.message.edit_text(
-            text=f"Введите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}",
+            text=f"Введите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{node_pre}",
             #reply_markup=builder.as_markup()
         )
+
 
 @router.callback_query(FormatCallbackData.filter(F.action == "set"))
 async def cb_set(callback: CallbackQuery, callback_data: FormatCallbackData, state: FSMContext):

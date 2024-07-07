@@ -65,16 +65,47 @@ class Settings(BaseModel):
     def new(cls):  # pragma: no cover
         return Settings(**DEFAULT_SETTINGS)
 
-    def get_key(self, path: str) -> Any:
+    def get_annotation(self, path: str) -> Any:
 
         # Узлы пути
         nodes = path.split(".")
         logger.info('        nodes = %s', nodes)
 
-        obj = self._transit_obj(nodes, enable_append=True)
-        logger.info('          obj = %s', pformat(obj))
+        transit_nodes = nodes[0:-1]
+        logger.info('transit_nodes = %s', transit_nodes)
 
-        return obj WIP
+        # Обработка последнего узла отличается от прочих, поэтому отделяем его для отдельной обработки
+        last_node = nodes[-1]
+        logger.info('    last_node = %s', last_node)
+
+        transit_obj = self._transit_obj(transit_nodes)
+        logger.info('  transit_obj = %s', pformat(transit_obj))
+
+        obj = self._get_annotation(transit_obj, last_node)
+        logger.info('   annotation = %s', pformat(obj))
+
+        return obj
+
+    def get_node(self, path: str) -> Any:
+
+        # Узлы пути
+        nodes = path.split(".")
+        logger.info('        nodes = %s', nodes)
+
+        transit_nodes = nodes[0:-1]
+        logger.info('transit_nodes = %s', transit_nodes)
+
+        # Обработка последнего узла отличается от прочих, поэтому отделяем его для отдельной обработки
+        last_node = nodes[-1]
+        logger.info('    last_node = %s', last_node)
+
+        transit_obj = self._transit_obj(transit_nodes)
+        logger.info('  transit_obj = %s', pformat(transit_obj))
+
+        obj = self._get_node(transit_obj, last_node)
+        logger.info('         node = %s', pformat(obj))
+
+        return obj
 
     def set_key(self, path: str, value: Any = None) -> dict:
 
@@ -158,6 +189,52 @@ class Settings(BaseModel):
 
         return obj
 
+    def _get_annotation(self, obj, node): WIP
+        # Получить аннотацию узла
+        # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
+        # Скобок с индексом в узле может не быть, тогда будет найден только атрибут
+        renode = re.compile(r'^(.+?)(?:\[(\d+)\])?$')
+        matches = renode.findall(node)
+
+        # Обращение к индексу (если индекса нет, то в matches[0][1] будет пустая строка '')
+        if matches[0][1]:
+            attr = getattr(obj, matches[0][0])
+
+            if matches[0][1] == '-':
+                logger.info('%s.pop()', attr.__class__.__name__)
+                attr.pop()
+            else:
+                i = int(matches[0][1])
+                logger.info('%s.pop(%s)', attr.__class__.__name__, i)
+                attr.pop(i)
+        # Обращение к атрибуту
+        else:
+            annotation = obj.model_fields[matches[0][0]].annotation
+            return annotation
+
+    def _get_node(self, obj, node):
+        # Получить узел объекта
+        # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
+        # Скобок с индексом в узле может не быть, тогда будет найден только атрибут
+        renode = re.compile(r'^(.+?)(?:\[(\d+)\])?$')
+        matches = renode.findall(node)
+
+        # Обращение к индексу (если индекса нет, то в matches[0][1] будет пустая строка '')
+        if matches[0][1]:
+            attr = getattr(obj, matches[0][0])
+
+            if matches[0][1] == '-':
+                logger.info('%s.pop()', attr.__class__.__name__)
+                attr.pop()
+            else:
+                i = int(matches[0][1])
+                logger.info('%s.pop(%s)', attr.__class__.__name__, i)
+                attr.pop(i)
+        # Обращение к атрибуту
+        else:
+            node = getattr(obj, matches[0][0])
+            return node
+
     def _set_obj(self, obj, node, value) -> None:
         # Обработка последнего узла
         # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
@@ -203,3 +280,4 @@ class Settings(BaseModel):
         # Обращение к атрибуту
         else:
             raise ValueError('Удалять можно только элементы списка')
+
