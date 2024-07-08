@@ -121,6 +121,8 @@ async def _set(path, state, value):
         settings_data = settings.set_key(path=path, value=value)
         await state.update_data(settings=settings_data)
 
+        # TODO при установке значения по умолчанию value будет None, value_pre тоже None.
+        #  Но выводить None в этом случае не изящно, надо бы выводить значение по умолчанию.
         value_pre = html.pre_language(value, 'YAML')
         text = f'Установлен ключ <b>{path}</b>.\n\nНовое значение:\n{value_pre}'
     except Exception as e:
@@ -204,40 +206,51 @@ class FormatCallbackData(CallbackData, prefix="st"):
 async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, state: FSMContext):
     path = callback_data.path
 
-    # TODO тут два чтения из state, надо свести к одному
-    annotation = await _annotation(path, state)
+    # Значение узла настроек
     value = await _get(path, state)
 
     builder = InlineKeyboardBuilder()
     text: str
 
-    # Узел - литерал
-    if get_origin(annotation) is Literal:
-        # Допустимы значания литерала
-        annotation_args = get_args(annotation)
-        print(f'annotation_args = {annotation_args}')
+    # Узел - строка
+    #if get_origin(annotation) is Literal:
+    if isinstance(value, str):
+        annotation = await _annotation(path, state)
 
-        # Клавиатура по списку значений
-        for arg in annotation_args:
-            builder.button(
-                text=arg, callback_data=FormatCallbackData(action='set', path=path, value=arg)
-            )
-        builder.adjust(3)
+        # Узел — литерал
+        if get_origin(annotation) is Literal:
+            # Допустимы значания литерала
+            annotation_args = get_args(annotation)
+            print(f'annotation_args = {annotation_args}')
 
-        value_pre = html.pre_language(value, 'YAML')
-        text = f'Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}'
+            # Клавиатура по списку значений
+            for arg in annotation_args:
+                builder.button(
+                    text=arg, callback_data=FormatCallbackData(action='set', path=path, value=arg)
+                )
+            builder.adjust(3)
 
+            value_pre = html.pre_language(value, 'YAML')
+            text = f'Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}'
+
+        # Узел - обычная строка
+        else:
+            value_pre = html.pre_language(value, 'YAML')
+            text = f'Введите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}'
 
     # Узел — список
     elif isinstance(value, RootModel):
         # Длина списка
         length = len(value.list())
 
-        # Клавиатура по диапазону чисел
+        # Клавиатура по диапазону чисел (и кнопка `+`)
         for i in range(length):
             builder.button(
                 text=f'{i}', callback_data=FormatCallbackData(action='value', path=f'{path}[{i}]')
             )
+        builder.button(
+            text='+', callback_data=FormatCallbackData(action='value', path=f'{path}[+]')
+        )
         builder.adjust(3)
 
         length_code = html.code(length)

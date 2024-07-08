@@ -210,26 +210,7 @@ class Settings(BaseModel):
         :return: аннотация узла.
         """
 
-        # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
-        # Скобок с индексом в узле может не быть, тогда будет найден только атрибут
-        renode = re.compile(r'^(.+?)(?:\[(\d+)\])?$')
-        matches = renode.findall(node)
-
-        # Обращение к индексу (если индекса нет, то в matches[0][1] будет пустая строка '')
-        if matches[0][1]:
-            attr = getattr(obj, matches[0][0])
-
-            if matches[0][1] == '-':
-                logger.info('%s.pop()', attr.__class__.__name__)
-                attr.pop()
-            else:
-                i = int(matches[0][1])
-                logger.info('%s.pop(%s)', attr.__class__.__name__, i)
-                attr.pop(i)
-        # Обращение к атрибуту
-        else:
-            annotation = obj.model_fields[matches[0][0]].annotation
-            return annotation
+        return obj.model_fields[node].annotation
 
     def _get_value(self, obj, node) -> Any:
         """
@@ -242,23 +223,24 @@ class Settings(BaseModel):
 
         # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
         # Скобок с индексом в узле может не быть, тогда будет найден только атрибут
-        renode = re.compile(r'^(.+?)(?:\[(\d+)\])?$')
+        renode = re.compile(r'^(.+?)(?:\[(\d+|\+)\])?$')
         matches = renode.findall(node)
 
         # Обращение к индексу (если индекса нет, то в matches[0][1] будет пустая строка '')
         if matches[0][1]:
             attr = getattr(obj, matches[0][0])
-            logger.info('         attr = %s ',  pformat(attr))
+            logger.info('         attr = %s ', pformat(attr))
 
-            if matches[0][1] == '-':
-                logger.info('%s.pop()', attr.__class__.__name__)
-                attr.pop()
+            if matches[0][1] == '+':
+                logger.info('%s.append()', attr.__class__.__name__)
+                attr.append() WIP
             else:
                 i = int(matches[0][1])
                 element = attr[i]
-                logger.info('        index = %s ', pformat(element)) # wip
+                logger.info('        index = %s ', pformat(element))
 
                 return element
+
         # Обращение к атрибуту
         else:
             node = getattr(obj, matches[0][0])
