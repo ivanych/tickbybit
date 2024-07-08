@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import Any
 
 from aiogram import Router, html
 from aiogram.filters import CommandStart, Command, CommandObject, StateFilter
@@ -61,7 +62,6 @@ async def command_settings(message: Message, state: FSMContext) -> None:
 
 @router.message(Command("set"), SettingsStatesGroup.registered)
 async def command_set(message: Message, command: CommandObject, state: FSMContext) -> None:
-
     # Если прилетела команда с аргументами — устанавливаем ключ
     if command.args:
         # Разбор аргументов команды
@@ -96,7 +96,24 @@ async def command_set(message: Message, command: CommandObject, state: FSMContex
         )
 
 
+async def _annotation(path, state) -> Any:
+    # Настройки
+    data = await state.get_data()
+    settings = Settings(**data['settings'])
+
+    return settings.get_annotation(path)
+
+
+async def _get(path, state) -> Any:
+    # Настройки
+    data = await state.get_data()
+    settings = Settings(**data['settings'])
+
+    return settings.get_value(path)
+
+
 async def _set(path, state, value):
+    # Настройки
     data = await state.get_data()
     settings = Settings(**data['settings'])
 
@@ -174,6 +191,8 @@ from aiogram import F
 from aiogram.filters.callback_data import CallbackData
 from typing import Optional, get_args, Literal, get_origin
 from pprint import pformat
+from pydantic import RootModel
+
 
 class FormatCallbackData(CallbackData, prefix="st"):
     action: str
@@ -183,41 +202,56 @@ class FormatCallbackData(CallbackData, prefix="st"):
 
 @router.callback_query(FormatCallbackData.filter(F.action == "value"))
 async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, state: FSMContext):
-
-    # Настройки
-    data = await state.get_data()
-    settings = Settings(**data['settings'])
-
     path = callback_data.path
 
-    # Узел настроек
-    node = settings.get_node(path)
-    annotation = settings.get_annotation(path)
+    # TODO тут два чтения из state, надо свести к одному
+    annotation = await _annotation(path, state)
+    value = await _get(path, state)
+
+    builder = InlineKeyboardBuilder()
+    text: str
 
     # Узел - литерал
     if get_origin(annotation) is Literal:
+        # Допустимы значания литерала
         annotation_args = get_args(annotation)
         print(f'annotation_args = {annotation_args}')
 
-        builder = InlineKeyboardBuilder()
+        # Клавиатура по списку значений
         for arg in annotation_args:
             builder.button(
                 text=arg, callback_data=FormatCallbackData(action='set', path=path, value=arg)
             )
         builder.adjust(3)
 
-        node_pre = html.pre_language(node, 'YAML')
-        await callback.message.edit_text(
-            text=f"Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{node_pre}",
-            reply_markup=builder.as_markup()
-        )
+        value_pre = html.pre_language(value, 'YAML')
+        text = f'Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}'
+
+
+    # Узел — список
+    elif isinstance(value, RootModel):
+        # Длина списка
+        length = len(value.list())
+
+        # Клавиатура по диапазону чисел
+        for i in range(length):
+            builder.button(
+                text=f'{i}', callback_data=FormatCallbackData(action='value', path=f'{path}[{i}]')
+            )
+        builder.adjust(3)
+
+        length_code = html.code(length)
+        text = (f'Выберите индекс элемента в ключе <b>{path}</b>.\n\n'
+                f'Всего элементов в ключе: {length_code}')
 
     else:
-        node_pre = html.pre_language(node, 'YAML')
-        await callback.message.edit_text(
-            text=f"Введите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{node_pre}",
-            #reply_markup=builder.as_markup()
-        )
+        value_pre = html.pre_language(value, 'YAML')
+        text = f'неизвестный тип узла <b>{path}</b>.\n\nТекущее значение:\n{value_pre}'
+
+    await callback.message.edit_text(
+        text=text,
+        reply_markup=builder.as_markup()
+    )
 
 
 @router.callback_query(FormatCallbackData.filter(F.action == "set"))
