@@ -22,6 +22,12 @@ from tickbybit.menu import set_command_menu
 from tickbybit.settings import get_all
 from tickbybit.models.settings.settings import Settings
 
+
+# TODO надо перенести в модуль
+def _str2bool(v: str) -> bool:
+    return str(v).lower() in ('true', 'yes', 'on')
+
+
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 
 logger = logging.getLogger("tickbybit")
@@ -31,6 +37,7 @@ SETTINGS_FILE = getenv("SETTINGS_FILE")
 TICKERS_DIR = getenv("TICKERS_DIR")
 PRICE_TTL = int(getenv("PRICE_TTL"))
 ALLOWED_USERS = list(map(int, getenv("ALLOWED_USERS").split(':')))
+DOWNLOAD_ENABLE = _str2bool(getenv("DOWNLOAD_ENABLE"))
 DOWNLOAD_PERIOD = int(getenv("DOWNLOAD_PERIOD"))
 PRUNE_PERIOD = int(getenv("PRUNE_PERIOD"))
 ALERT_PERIOD = int(getenv("ALERT_PERIOD"))
@@ -40,6 +47,7 @@ logger.info("Env SETTINGS_FILE=%s", SETTINGS_FILE)
 logger.info("Env TICKERS_DIR=%s", TICKERS_DIR)
 logger.info("Env PRICE_TTL=%s", PRICE_TTL)
 logger.info("Env ALLOWED_USERS=%s", ALLOWED_USERS)
+logger.info("Env DOWNLOAD_ENABLE=%s", DOWNLOAD_ENABLE)
 logger.info("Env DOWNLOAD_PERIOD=%s", DOWNLOAD_PERIOD)
 logger.info("Env PRUNE_PERIOD=%s", PRUNE_PERIOD)
 logger.info("Env ALERT_PERIOD=%s", ALERT_PERIOD)
@@ -69,13 +77,14 @@ async def main() -> None:
     scheduler = AsyncIOScheduler()
 
     # Загрузка новых прайсов
-    scheduler.add_job(
-        func=download_new_tickers,
-        trigger='interval',
-        kwargs={'tickers_dir': TICKERS_DIR},
-        id=f"download_new_tickers",
-        seconds=DOWNLOAD_PERIOD,
-    )
+    if DOWNLOAD_ENABLE:
+        scheduler.add_job(
+            func=download_new_tickers,
+            trigger='interval',
+            kwargs={'tickers_dir': TICKERS_DIR},
+            id=f"download_new_tickers",
+            seconds=DOWNLOAD_PERIOD,
+        )
 
     # Очистка старых прайсов
     scheduler.add_job(
