@@ -226,7 +226,7 @@ async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, s
             # Клавиатура по списку значений
             for arg in annotation_args:
                 builder.button(
-                    text=arg, callback_data=FormatCallbackData(action='set', path=path, value=arg)
+                    text=arg, callback_data=FormatCallbackData(action='set', path=path, value=arg) WIP
                 )
             builder.adjust(3)
 
@@ -249,7 +249,7 @@ async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, s
                 text=f'{i}', callback_data=FormatCallbackData(action='value', path=f'{path}[{i}]')
             )
         builder.button(
-            text='+', callback_data=FormatCallbackData(action='value', path=f'{path}[+]')
+            text='+', callback_data=FormatCallbackData(action='set', path=f'{path}[+]')
         )
         builder.adjust(3)
 
