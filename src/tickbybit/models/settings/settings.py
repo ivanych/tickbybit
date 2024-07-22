@@ -223,28 +223,25 @@ class Settings(BaseModel):
 
         # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
         # Скобок с индексом в узле может не быть, тогда будет найден только атрибут
-        renode = re.compile(r'^(.+?)(?:\[(\d+|\+)\])?$')
+        renode = re.compile(r'^(.+?)(?:\[(\d+)\])?$')
         matches = renode.findall(node)
 
-        # Обращение к индексу (если индекса нет, то в matches[0][1] будет пустая строка '')
+        # Обращение к элементу (если индекса нет, то в matches[0][1] будет пустая строка '')
         if matches[0][1]:
             attr = getattr(obj, matches[0][0])
             logger.info('         attr = %s ', pformat(attr))
 
-            if matches[0][1] == '+':
-                logger.info('%s.append()', attr.__class__.__name__)
-                attr.append() WIP
-            else:
-                i = int(matches[0][1])
-                element = attr[i]
-                logger.info('        index = %s ', pformat(element))
+            i = int(matches[0][1])
+            element = attr[i]
+            logger.info('      element = %s ', pformat(element))
 
-                return element
+            return element
 
         # Обращение к атрибуту
         else:
-            node = getattr(obj, matches[0][0])
-            return node
+            attr = getattr(obj, matches[0][0])
+
+            return attr
 
     def _set_obj(self, obj, node, value) -> None:
         # Обработка последнего узла
