@@ -252,10 +252,16 @@ async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, s
 
     # Узел — список
     elif isinstance(value, RootModel):
+        logger.info('Тип узла: класс-список')
+
         # Длина списка
         length = len(value.list())
 
         # Клавиатура по диапазону чисел (и кнопка `+`)
+        # TODO сборку клавиатуры вынести в отдельную функцию
+        length_code = html.code(length)
+        text = (f'Выберите индекс элемента в ключе <b>{path}</b>.\n\n'
+                f'Всего элементов в ключе: {length_code}')
         for i in range(length):
             builder.button(
                 text=f'{i}', callback_data=FormatCallbackData(action='value', path=f'{path}[{i}]')
@@ -264,10 +270,6 @@ async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, s
             text='+', callback_data=FormatCallbackData(action='set', path=f'{path}[+]')
         )
         builder.adjust(3)
-
-        length_code = html.code(length)
-        text = (f'Выберите индекс элемента в ключе <b>{path}</b>.\n\n'
-                f'Всего элементов в ключе: {length_code}')
 
     else:
         value_pre = html.pre_language(value, 'YAML')
