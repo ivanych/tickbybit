@@ -207,34 +207,46 @@ async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, s
     path = callback_data.path
 
     # Значение узла настроек
+    logger.info('Получение значения узла настроек...')
     value = await _get(path, state)
 
     builder = InlineKeyboardBuilder()
     text: str
 
+    # Тип узла настроек
+    logger.info('Определение типа узла настроек...')
+    logger.info('          type(value) = %s', type(value))
+
     # Узел - строка
-    #if get_origin(annotation) is Literal:
     if isinstance(value, str):
+        logger.info('Тип узла: строка; требуется определение подтипа...')
         annotation = await _annotation(path, state)
+        origin = get_origin(annotation)
+        logger.info('get_origin(annotation) = %s', pformat(origin))
 
         # Узел — литерал
-        if get_origin(annotation) is Literal:
-            # Допустимы значания литерала
-            annotation_args = get_args(annotation)
-            print(f'annotation_args = {annotation_args}')
+        if origin is Literal:
+            logger.info('Подтип узла: литерал; определяем допустимые значения...')
 
-            # Клавиатура по списку значений
+            # Значения литерала
+            annotation_args = get_args(annotation)
+            logger.info('      annotation_args = %s', annotation_args)
+
+            # Клавиатура по списку значений литерала
+            # TODO сборку клавиатуры вынести в отдельную функцию
+            value_pre = html.pre_language(value, 'YAML')
+            text = f'Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}'
             for arg in annotation_args:
                 builder.button(
                     text=arg, callback_data=FormatCallbackData(action='set', path=path, value=arg)
                 )
             builder.adjust(3)
 
-            value_pre = html.pre_language(value, 'YAML')
-            text = f'Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}'
-
         # Узел - обычная строка
         else:
+            logger.info('Подтип узла: обычная строка')
+
+            # Клавиатуры нет, ввод значения
             value_pre = html.pre_language(value, 'YAML')
             text = f'Введите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}'
 
@@ -249,7 +261,7 @@ async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, s
                 text=f'{i}', callback_data=FormatCallbackData(action='value', path=f'{path}[{i}]')
             )
         builder.button(
-            text='+', callback_data=FormatCallbackData(action='value', path=f'{path}[+]')
+            text='+', callback_data=FormatCallbackData(action='set', path=f'{path}[+]')
         )
         builder.adjust(3)
 
