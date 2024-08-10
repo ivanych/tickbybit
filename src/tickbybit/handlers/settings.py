@@ -118,13 +118,16 @@ async def _set(path, state, value):
     settings = Settings(**data['settings'])
 
     try:
-        settings_data = settings.set_key(path=path, value=value)
-        await state.update_data(settings=settings_data)
+        (new_value, new_index) = settings.set_key(path=path, value=value)
+        await state.update_data(settings=settings.model_dump())
 
-        # TODO при установке значения по умолчанию value будет None, value_pre тоже None.
-        #  Но выводить None в этом случае не изящно, надо бы выводить значение по умолчанию.
-        value_pre = html.pre_language(value, 'YAML')
-        text = f'Установлен ключ <b>{path}</b>.\n\nНовое значение:\n{value_pre}'
+        # Замена '+' на индекс добавленного элемента (если был добавлен новый элемент)
+        new_path = path.replace('[+]', f'[{new_index}]') if new_index else path
+
+        path_bold = html.bold(new_path)
+        value_pre = html.pre_language(new_value, 'YAML')
+        text = f'Установлен ключ {path_bold}.\n\nНовое значение:\n{value_pre}'
+
     except Exception as e:
         text = str(e)
 

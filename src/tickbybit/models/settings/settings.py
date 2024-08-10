@@ -119,28 +119,30 @@ class Settings(BaseModel):
 
         return obj
 
-    def set_key(self, path: str, value: Any = None) -> dict:
+    def set_key(self, path: str, value: Any = None) -> tuple[Any, int | None]:
 
         # Узлы пути
         nodes = path.split(".")
-        logger.info('        nodes = %s', nodes)
+        logger.info('         nodes = %s', nodes)
 
         transit_nodes = nodes[0:-1]
-        logger.info('transit_nodes = %s', transit_nodes)
+        logger.info(' transit_nodes = %s', transit_nodes)
 
         # Обработка последнего узла отличается от прочих, поэтому отделяем его для отдельной обработки
         last_node = nodes[-1]
-        logger.info('    last_node = %s', last_node)
+        logger.info('     last_node = %s', last_node)
 
         obj = self._transit_obj(transit_nodes, enable_append=True)
-        logger.info('          obj = %s', pformat(obj))
+        logger.info('           obj = %s', pformat(obj))
 
-        logger.info('        value = %s', pformat(value))
+        logger.info('         value = %s', pformat(value))
 
-        self._set_obj(obj, last_node, value)
-        logger.info('      new obj = %s', pformat(obj))
+        (new_value, new_index) = self._set_obj(obj, last_node, value)
+        logger.info('     new value = %s', pformat(new_value))
+        logger.info('     new index = %s', pformat(new_index))
+        logger.info('       new obj = %s, new_value = %s, new_index = %s', pformat(obj), pformat(new_value), pformat(new_index))
 
-        return self.model_dump()
+        return new_value, new_index
 
     def del_key(self, path: str) -> dict:
 
@@ -223,7 +225,7 @@ class Settings(BaseModel):
 
         # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
         # Скобок с индексом в узле может не быть, тогда будет найден только атрибут
-        renode = re.compile(r'^(.+?)(?:\[(\d+)\])?$')
+        renode = re.compile(r'^(.+?)(?:\[(\d+|\+)\])?$')
         matches = renode.findall(node)
 
         # Обращение к элементу (если индекса нет, то в matches[0][1] будет пустая строка '')
@@ -231,7 +233,8 @@ class Settings(BaseModel):
             attr = getattr(obj, matches[0][0])
             logger.info('         attr = %s ', pformat(attr))
 
-            i = int(matches[0][1])
+            # Если индекс указан как '+', то превращаем его в -1 (т.е. читаем последний элемент)
+            i = -1 if matches[0][1] == '+' else int(matches[0][1])
             element = attr[i]
             logger.info('      element = %s ', pformat(element))
 
@@ -243,7 +246,7 @@ class Settings(BaseModel):
 
             return attr
 
-    def _set_obj(self, obj, node, value) -> None:
+    def _set_obj(self, obj, node, value) -> tuple[Any, int]:
         # Обработка последнего узла
         # Режем узел пути с индексом (атрибут[индекс]) на атрибут и индекс
         # Если вместо числового индекса указан '+', то это добавление нового элемента
@@ -251,13 +254,17 @@ class Settings(BaseModel):
         renode = re.compile(r'^(.+?)(?:\[(\d+|\+)\])?$')
         matches = renode.findall(node)
 
+        new_value: Any
+        new_index: int | None = None
+
         # Обращение к индексу (если индекса нет, то в matches[0][1] будет пустая строка '')
         if matches[0][1]:
             attr = getattr(obj, matches[0][0])
 
             if matches[0][1] == '+':
                 logger.info('%s.append(%s)', attr.__class__.__name__, pformat(value))
-                attr.append(value)
+                (new_index, new_value) = attr.append(value)
+
             else:
                 i = int(matches[0][1])
                 logger.info('%s[%s] = %s', attr.__class__.__name__, i)
@@ -265,6 +272,8 @@ class Settings(BaseModel):
         else:
             logger.info('setattr(%s, %s, %s)', obj.__class__.__name__, node, pformat(value))
             setattr(obj, node, value)
+
+        return new_value, new_index
 
     def _del_obj(self, obj, last_node):
         # Обработка последнего узла
