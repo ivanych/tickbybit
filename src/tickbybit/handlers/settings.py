@@ -241,7 +241,7 @@ async def cb_value(callback: CallbackQuery, callback_data: FormatCallbackData, s
             text = f'Выберите значение для ключа <b>{path}</b>.\n\nТекущее значение:\n{value_pre}'
             for arg in annotation_args:
                 builder.button(
-                    text=arg, callback_data=FormatCallbackData(action='set', path=path, value=arg)
+                    text=arg, callback_data=FormatCallbackData(action='set', path=path, value=arg) WIP
                 )
             builder.adjust(3)
 
